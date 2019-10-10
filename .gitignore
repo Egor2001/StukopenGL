@@ -1,3 +1,22 @@
+#custom gitignore
+#tags, output [, make]
+
+#binary
+bin/
+
+#output
+output/
+
+#tags
+tags
+*.tags
+
+#uncomment to ignore make
+#Makefile
+
+#default gitignore
+#for C++
+
 # Prerequisites
 *.d
 
