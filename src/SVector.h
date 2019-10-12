@@ -18,77 +18,97 @@ SVector operator + (const SVector& right, const SVector& left);
 SVector operator - (const SVector& right, const SVector& left);
 SVector operator * (const SVector& vector, float scale); 
     
-SVector unitary(const SVector& vector);
-
 SVector vector_mul(const SVector& right, const SVector& left);
 float   scalar_mul(const SVector& right, const SVector& left);
+
+float   abs    (const SVector& vector);
+SVector unitary(const SVector& vector);
+SVector normal (const SVector& vector);
 
 struct SVector
 {
 public:
-    SVector():
-        x(0.0f), y(0.0f), z(0.0f), w(1.0f)
-    {}
+    SVector();
+    SVector(float x_set, float y_set, float z_set, float w_set = 1.0f);
 
-    SVector(float x_set, float y_set, float z_set, float w_set = 1.0f):
-        x(x_set), y(y_set), z(z_set), w(w_set)
-    {}
+          float& operator [] (size_t idx)       noexcept;
+    const float& operator [] (size_t idx) const noexcept;
+       
+    SVector operator - () const;
 
-    float& operator [] (size_t idx) noexcept
-    {
-        switch (idx)
-        {
-            case 0: return x;
-            case 1: return y;
-            case 2: return z;
-            case 3: return w;
-            default: return w;                 
-        }
-    }
- 
-    const float& operator [] (size_t idx) const noexcept
-    {
-        switch (idx)
-        {
-            case 0: return x;
-            case 1: return y;
-            case 2: return z;
-            case 3: return w;
-            default: return w;                 
-        }
-    }
-   
-    SVector& operator += (const SVector& add)
-    {
-        x = x*add.w + add.x*w; 
-        y = y*add.w + add.y*w; 
-        z = z*add.w + add.z*w; 
-        w *= add.w;
+    SVector& operator += (const SVector& add);
+    SVector& operator -= (const SVector& sub);
+    SVector& operator *= (float scale);
 
-        return *this;
-    }
-    
-    SVector& operator -= (const SVector& sub)
-    {
-        x = x*sub.w - sub.x*w; 
-        y = y*sub.w - sub.y*w; 
-        z = z*sub.w - sub.z*w; 
-        w *= sub.w;
-
-        return *this;
-    }
-    
-    SVector& operator *= (float scale)
-    {
-        x *= scale; 
-        y *= scale; 
-        z *= scale; 
-
-        return *this;
-    }
-
+public:
     float x, y, z, w;
 };
+
+SVector::SVector():
+    x(0.0f), y(0.0f), z(0.0f), w(1.0f)
+{}
+
+SVector::SVector(float x_set, float y_set, float z_set, float w_set):
+    x(x_set), y(y_set), z(z_set), w(w_set)
+{}
+
+float& SVector::operator [] (size_t idx) noexcept
+{
+    switch (idx)
+    {
+        case 0: return x;
+        case 1: return y;
+        case 2: return z;
+        case 3: return w;
+        default: return w;                 
+    }
+}
+
+const float& SVector::operator [] (size_t idx) const noexcept
+{
+    switch (idx)
+    {
+        case 0: return x;
+        case 1: return y;
+        case 2: return z;
+        case 3: return w;
+        default: return w;                 
+    }
+}
+
+SVector SVector::operator - () const
+{
+    return SVector(-x, -y, -z, w);
+}
+
+SVector& SVector::operator += (const SVector& add)
+{
+    x = x*add.w + add.x*w; 
+    y = y*add.w + add.y*w; 
+    z = z*add.w + add.z*w; 
+    w *= add.w;
+
+    return *this;
+}
+
+SVector& SVector::operator -= (const SVector& sub)
+{
+    x = x*sub.w - sub.x*w; 
+    y = y*sub.w - sub.y*w; 
+    z = z*sub.w - sub.z*w; 
+    w *= sub.w;
+
+    return *this;
+}
+
+SVector& SVector::operator *= (float scale)
+{
+    x *= scale; 
+    y *= scale; 
+    z *= scale; 
+
+    return *this;
+}
 
 SVector operator + (const SVector& right, const SVector& left)
 {
@@ -108,18 +128,6 @@ SVector operator * (const SVector& vector, float scale)
     return (result *= scale);    
 }
     
-SVector unitary(const SVector& vector)
-{
-    SVector result;
-
-    if (fabs(vector.w) < FLT_EPSILON)
-        result = SVector(FLT_MAX, FLT_MAX, FLT_MAX, 1.0f);
-    else
-        result = vector*(1.0f/vector.w);
-
-    return result; 
-}
-
 SVector vector_mul(const SVector& right, const SVector& left)
 {
     SVector result = {};
@@ -141,9 +149,41 @@ float scalar_mul(const SVector& right, const SVector& left)
     result += right.z*left.z;
 
     if (fabs(right.w*left.w) > FLT_EPSILON)
-        result /= right.w*left.w;
+        result /= (right.w*left.w);
     else
         result = FLT_MAX;
+
+    return result;
+}
+
+float abs(const SVector& vector)
+{
+    return sqrtf(scalar_mul(vector, vector));
+}
+
+SVector unitary(const SVector& vector)
+{
+    SVector result;
+
+    if (fabs(vector.w) < FLT_EPSILON)
+        result = SVector(FLT_MAX, FLT_MAX, FLT_MAX, 1.0f);
+    else
+        result = vector*(1.0f/vector.w);
+
+    return result; 
+}
+
+SVector normal(const SVector& vector)
+{
+    SVector result; 
+
+    float length = abs(vector);
+    if (length < FLT_EPSILON)
+        result = SVector();
+    else
+        result = unitary(vector*(1.0f/length));
+
+    result.w = 0.0f;
 
     return result;
 }
