@@ -31,6 +31,16 @@ public:
 
     ~CObject();
 
+    const std::vector<SVertex>& vertex_buf() const noexcept
+    {
+        return vertex_buf_;
+    }
+
+    const std::vector<SObjIndex>& index_buf() const noexcept
+    {
+        return index_buf_;
+    }
+
     bool parse_from(FILE* obj_file);
     bool write_to  (FILE* obj_file) const;
 
@@ -82,13 +92,22 @@ bool CObject::parse_from(FILE* obj_file)
         result = false;
     else
     {
+        vertex_buf_.clear();
+        index_buf_ .clear();
+
         const size_t LINE_LEN = 128;
         char cur_line[LINE_LEN] = "";
 
         int ret = 1;
-        while (ret)
+        while (ret && !feof(obj_file))
         {
             ret = fscanf(obj_file, "%127[^\n]", cur_line);
+
+            if (!ret)
+            {
+                ret = fscanf(obj_file, "%127[\n\r ]", cur_line);
+                continue;
+            }
 
             char* it = cur_line;
             while(isspace(*it)) ++it;
@@ -130,7 +149,9 @@ bool CObject::parse_from(FILE* obj_file)
                         size_t vector_idx_arr[3] = {};
                         size_t normal_idx_arr[3] = {};
 
-                        sscanf(it, "%lu//%lu %lu//%lu %lu//%lu",
+                        sscanf(it, "%lu/%*u/%lu" 
+                                   "%lu/%*u/%lu" 
+                                   "%lu/%*u/%lu",
                                vector_idx_arr+0, normal_idx_arr+0, 
                                vector_idx_arr+1, normal_idx_arr+1, 
                                vector_idx_arr+2, normal_idx_arr+2); 
@@ -161,6 +182,8 @@ bool CObject::parse_from(FILE* obj_file)
                 break;
             }
         }
+
+        result = true;
     }
 
     return result;
