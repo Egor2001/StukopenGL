@@ -48,6 +48,20 @@ public:
                    const SVertex& mid_v, 
                    const SVertex& end_v);
 
+    void fill_face(const SVertex[3] v_arr);
+
+    void fill_half(const SVertex& beg_v, const SVertex& end_v,
+                   const SVertex& top_v);
+
+    void fill_xseq(const SVertex& cur_beg_v, const SVertex& cur_end_v);
+
+    //TODO: make it static
+    SVertex interpolate(const SVertex& beg_v, const SVertex& end_v, 
+                        float ratio);
+
+    //TODO: make it static
+    SFragment get_fragment(const SVertex& vertex);
+
 private:
     std::vector<SFragment> frag_vec_;
 };
@@ -79,25 +93,11 @@ void CRasterizer::rast_line(const SVertex& beg_v,
     
     for (size_t cur_step = 0; cur_step < step_cnt; ++cur_step)
     {
-        //step_cnt to-float conversion shoul be optimized
+        //step_cnt to-float conversion should be optimized
         float ratio = (float(cur_step) / float(step_cnt));
-        SVector cur_point = (beg_v.point * (1.0f - ratio) + 
-                             end_v.point *         ratio);
+        SVertex cur_vertex = interpolate(beg_v, end_v, ratio);
 
-        SColor cur_color = interpolate(beg_v.color, end_v.color, ratio);
-
-        SFragment cur_frag = {};
-
-        cur_frag.x = size_t(cur_point.x);
-        cur_frag.y = size_t(cur_point.y);
-
-        cur_frag.depth = cur_point.z;
-        cur_frag.color = { uint8_t(255.0f*cur_color.r),
-                           uint8_t(255.0f*cur_color.g),
-                           uint8_t(255.0f*cur_color.b),
-                           uint8_t(255.0f*cur_color.a) };
-
-        frag_vec_.push_back(cur_frag);
+        frag_vec_.push_back(get_fragment(cur_vertex));
     }
 }
 
@@ -109,6 +109,83 @@ void CRasterizer::rast_face(const SVertex& beg_v,
     rast_line(beg_v, mid_v);
     rast_line(mid_v, end_v);
     rast_line(end_v, beg_v);
+}
+
+void CRasterizer::fill_face(const SVertex[3] v_arr)
+{
+    size_t idx_perm[3] = {0, 1, 2};
+
+#define CMP_Y_AND_SWAP(MAX_IDX, MIN_IDX) \
+    if (v_arr[idx_perm[MAX_IDX]].point.y < v_arr[idx_perm[MIN_IDX]].point.y) \
+        std::swap(idx_perm[MAX_IDX], idx_perm[MIN_IDX]);
+
+    CMP_Y_AND_SWAP(0, 1)
+    CMP_Y_AND_SWAP(1, 2)
+    CMP_Y_AND_SWAP(0, 1)
+
+#undef CMP_AND_SWAP
+
+    float ratio = (v_arr[idx_perm[0]].y - v_arr[idx_perm[1]].y) /
+                  (v_arr[idx_perm[0]].y - v_arr[idx_perm[2]].y);
+
+    SVertex mid_v = interpolate(SVertex[0], SVertex[1], ratio);
+
+    fill_half(mid_v, v_arr[1], v_arr[0]);
+    fill_half(mid_v, v_arr[1], v_arr[2]);
+}
+
+void CRasterizer::fill_half(const SVertex& beg_v, const SVertex& end_v,
+                            const SVertex& top_v)
+{
+    //TODO: check beg & end X coordinate equality requirement
+    size_t step_cnt = size_t(fabs(top_v.point.y - beg_v.point.y));
+
+    for (cur_step = 0; cur_step < step_cnt; ++cur_step)
+    {
+        float ratio = (float(cur_step) / float(step_cnt));
+
+        SVertex cur_beg_v = interpolate(top_v, beg_v, ratio);
+        SVertex cur_end_v = interpolate(top_v, end_v, ratio);
+        
+        fill_xseq(cur_beg_v, cur_end_v);
+    }
+}
+
+void CRasterizer::fill_xseq(const SVertex& cur_beg_v, 
+                            const SVertex& cur_end_v)
+{
+}
+
+SVertex CRasterizer::interpolate(const SVertex& beg_v, const SVertex& end_v, 
+                                 float ratio)
+{
+    SVertex result = {};
+
+    result.point = (beg_v.point * (1.0f - ratio) + 
+                    end_v.point *         ratio);
+
+    result.normal = (beg_v.normal * (1.0f - ratio) + 
+                     end_v.normal *         ratio);
+
+    result.color = ::interpolate(beg_v.color, end_v.color, ratio);
+
+    return result;
+}
+
+SFragment CRasterizer::get_fragment(const SVertex& vertex)
+{
+    SFragment result = {};
+
+    result.x = size_t(vertex.point.x);
+    result.y = size_t(vertex.point.y);
+
+    result.depth = vertex.point.z;
+    result.color = { uint8_t(255.0f*vertex.color.r),
+                     uint8_t(255.0f*vertex.color.g),
+                     uint8_t(255.0f*vertex.color.b),
+                     uint8_t(255.0f*vertex.color.a) };
+
+    return result;
 }
 
 int test_CRasterizer()
