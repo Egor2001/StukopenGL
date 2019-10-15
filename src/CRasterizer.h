@@ -48,12 +48,12 @@ public:
                    const SVertex& mid_v, 
                    const SVertex& end_v);
 
-    void fill_face(const SVertex[3] v_arr);
+    void fill_face(const SVertex v_arr[3]);
 
     void fill_half(const SVertex& beg_v, const SVertex& end_v,
                    const SVertex& top_v);
 
-    void fill_xseq(const SVertex& cur_beg_v, const SVertex& cur_end_v);
+    void fill_xseq(const SVertex& beg_v, const SVertex& end_v);
 
     //TODO: make it static
     SVertex interpolate(const SVertex& beg_v, const SVertex& end_v, 
@@ -111,36 +111,45 @@ void CRasterizer::rast_face(const SVertex& beg_v,
     rast_line(end_v, beg_v);
 }
 
-void CRasterizer::fill_face(const SVertex[3] v_arr)
+void CRasterizer::fill_face(const SVertex v_arr[3])
 {
-    size_t idx_perm[3] = {0, 1, 2};
+    SVertex beg_v = v_arr[0]; 
+    SVertex mid_v = v_arr[1]; 
+    SVertex end_v = v_arr[2]; 
 
-#define CMP_Y_AND_SWAP(MAX_IDX, MIN_IDX) \
-    if (v_arr[idx_perm[MAX_IDX]].point.y < v_arr[idx_perm[MIN_IDX]].point.y) \
-        std::swap(idx_perm[MAX_IDX], idx_perm[MIN_IDX]);
+    if (beg_v.point.y < mid_v.point.y)
+        std::swap(beg_v, mid_v);
 
-    CMP_Y_AND_SWAP(0, 1)
-    CMP_Y_AND_SWAP(1, 2)
-    CMP_Y_AND_SWAP(0, 1)
+    if (mid_v.point.y < end_v.point.y)
+        std::swap(mid_v, end_v);
 
-#undef CMP_AND_SWAP
+    if (beg_v.point.y < mid_v.point.y)
+        std::swap(beg_v, mid_v);
 
-    float ratio = (v_arr[idx_perm[0]].y - v_arr[idx_perm[1]].y) /
-                  (v_arr[idx_perm[0]].y - v_arr[idx_perm[2]].y);
+    if (fabs(beg_v.point.y - end_v.point.y) < FLT_EPSILON)
+    {
+        fill_xseq(beg_v, mid_v);
+        fill_xseq(end_v, mid_v);
+    }
+    else
+    {
+        float ratio = (beg_v.point.y - mid_v.point.y) / 
+                      (beg_v.point.y - end_v.point.y);
 
-    SVertex mid_v = interpolate(SVertex[0], SVertex[1], ratio);
+        SVertex div_v = interpolate(beg_v, end_v, ratio);
 
-    fill_half(mid_v, v_arr[1], v_arr[0]);
-    fill_half(mid_v, v_arr[1], v_arr[2]);
+        fill_half(div_v, mid_v, beg_v);
+        fill_half(div_v, mid_v, end_v);
+        fill_xseq(div_v, mid_v);
+    }
 }
 
 void CRasterizer::fill_half(const SVertex& beg_v, const SVertex& end_v,
                             const SVertex& top_v)
-{
-    //TODO: check beg & end X coordinate equality requirement
-    size_t step_cnt = size_t(fabs(top_v.point.y - beg_v.point.y));
+{ //TODO: check beg & end Y coordinate equality requirement
+    size_t step_cnt = size_t(roundf(fabs(top_v.point.y - beg_v.point.y)));
 
-    for (cur_step = 0; cur_step < step_cnt; ++cur_step)
+    for (size_t cur_step = 0; cur_step < step_cnt; ++cur_step)
     {
         float ratio = (float(cur_step) / float(step_cnt));
 
@@ -151,9 +160,19 @@ void CRasterizer::fill_half(const SVertex& beg_v, const SVertex& end_v,
     }
 }
 
-void CRasterizer::fill_xseq(const SVertex& cur_beg_v, 
-                            const SVertex& cur_end_v)
+void CRasterizer::fill_xseq(const SVertex& beg_v, 
+                            const SVertex& end_v)
 {
+    size_t step_cnt = size_t(roundf(fabs(beg_v.point.x - 
+                                         end_v.point.x)));
+
+    for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
+    {
+        float ratio = (float(cur_step) / float(step_cnt));
+        SVertex cur_vertex = interpolate(beg_v, end_v, ratio);
+
+        frag_vec_.push_back(get_fragment(cur_vertex));
+    }
 }
 
 SVertex CRasterizer::interpolate(const SVertex& beg_v, const SVertex& end_v, 

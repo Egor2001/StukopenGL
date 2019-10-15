@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <ctime>
+#include <cstring>
 
 #include "SVector.h"
 #include "SColor.h" 
@@ -95,17 +96,17 @@ bool CObject::parse_from(FILE* obj_file)
         vertex_buf_.clear();
         index_buf_ .clear();
 
-        const size_t LINE_LEN = 128;
+        const size_t LINE_LEN = 256;
         char cur_line[LINE_LEN] = "";
 
         int ret = 1;
         while (ret && !feof(obj_file))
         {
-            ret = fscanf(obj_file, "%127[^\n]", cur_line);
+            ret = fscanf(obj_file, "%255[^\n]", cur_line);
 
             if (!ret)
             {
-                ret = fscanf(obj_file, "%127[\n\r ]", cur_line);
+                ret = fscanf(obj_file, "%255[\n\r ]", cur_line);
                 continue;
             }
 
@@ -154,8 +155,8 @@ bool CObject::parse_from(FILE* obj_file)
                                    "%lu/%*u/%lu",
                                vector_idx_arr+0, normal_idx_arr+0, 
                                vector_idx_arr+1, normal_idx_arr+1, 
-                               vector_idx_arr+2, normal_idx_arr+2); 
-                       
+                               vector_idx_arr+2, normal_idx_arr+2);
+
                         SObjIndex cur_index = SObjIndex();
                         for (size_t i = 0; i < 3; ++i)
                         {

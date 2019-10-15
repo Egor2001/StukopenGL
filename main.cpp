@@ -85,9 +85,9 @@ CVertexShader::out_t CVertexShader::apply(const in_t& in) const
 {
     out_t result = out_t();
 
-    result.point  = mtx_*in.point; 
-    result.normal =      in.normal; 
-    result.color  =      in.color;
+    result.point  = unitary(mtx_*in.point); 
+    result.normal =              in.normal; 
+    result.color  =              in.color;
  
     return result;
 }
@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 
         srand(seed ^ int(vert.point.x) ^
                      int(vert.point.y) ^ 
-                     int(vert.point.z));
+                     int(vert.point.z*1000.0f));
 
         vert.color = SColor(float(rand()&0xFF)/255.0f,
                             float(rand()&0xFF)/255.0f,
@@ -160,11 +160,13 @@ int main(int argc, char* argv[])
                 vert.point.x, vert.point.y, vert.point.z,
                 vert.point.w);
 
+    SVertex vert_arr[3] = {};
     for (const auto& face : obj.index_buf())
     {
-        rasterizer.rast_face(vert_buf[face.arr[0]],
-                             vert_buf[face.arr[1]],
-                             vert_buf[face.arr[2]]);  
+        for (size_t i = 0; i < 3; ++i)
+            vert_arr[i] = vert_buf[face.arr[i]];
+
+        rasterizer.fill_face(vert_arr);
     } 
 
     buf.render(rasterizer.frag_vec());
