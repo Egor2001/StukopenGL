@@ -34,6 +34,8 @@ public:
     int write(const void* src, size_t cnt)    
     {
         int result = ::write(fb_file_, src, cnt);
+        fsync(fb_file_);
+
         return result;
     }
 

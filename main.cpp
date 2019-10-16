@@ -22,76 +22,9 @@
 #include "src/CObject.h"
 #include "src/CCamera.h"
 #include "src/CCamera.h"
+#include "src/CVertexShader.h"
+#include "src/CVertexShader.h"
 
-class CVertexShader
-{
-public:
-    using in_t  = SVertex;
-    using out_t = SVertex;
-
-    CVertexShader();
-    explicit CVertexShader(const SMatrix& mtx_set);
-
-    CVertexShader             (const CVertexShader&);
-    CVertexShader& operator = (const CVertexShader&);
-
-    CVertexShader             (CVertexShader&&);
-    CVertexShader& operator = (CVertexShader&&);
-
-    ~CVertexShader();
-
-    out_t apply(const in_t& in) const;
-    
-private:
-    SMatrix mtx_; 
-};
-
-CVertexShader::CVertexShader():
-    mtx_()
-{}
-
-CVertexShader::CVertexShader(const SMatrix& mtx_set):
-    mtx_(mtx_set)
-{}
-
-CVertexShader::CVertexShader(const CVertexShader& copy_shader):
-    mtx_(copy_shader.mtx_)
-{}
-
-CVertexShader& CVertexShader::operator = (const CVertexShader& copy_shader)
-{
-    mtx_ = copy_shader.mtx_;
-
-    return *this;
-}
-
-CVertexShader::CVertexShader(CVertexShader&& move_shader):
-    mtx_(std::move(move_shader.mtx_))
-{}
-
-CVertexShader& CVertexShader::operator = (CVertexShader&& move_shader)
-{
-    std::swap(mtx_, move_shader.mtx_);
-
-    return *this;
-}
-
-CVertexShader::~CVertexShader()
-{
-    mtx_ = SMatrix();
-}
-
-CVertexShader::out_t CVertexShader::apply(const in_t& in) const
-{
-    out_t result = out_t();
-
-    result.point  = unitary(mtx_*in.point); 
-    result.normal =              in.normal; 
-    result.color  =              in.color;
- 
-    return result;
-}
- 
 int main(int argc, char* argv[])
 {
     if (argc == 1 || argc > 2)
@@ -110,6 +43,7 @@ int main(int argc, char* argv[])
 
     CObject obj = CObject();
     obj.parse_from(obj_file);
+    obj.write_to(stdout);
 
     CCamera cam = CCamera(SVector(0.75f, 1.25f, 1.0f), 
                           SVector(-0.75f, -1.25f, -1.0f));
@@ -125,10 +59,6 @@ int main(int argc, char* argv[])
                               SVector(0.0f, y_scale, 0.0f, y_shift), 
                               SVector(0.0f, 0.0f, 1.0f, 0.0f)); 
 
-    CVertexShader vertex_shader = CVertexShader(scr_mtx*cam_mtx);
-
-    obj.write_to(stdout);
-
     CScreen scr = CScreen();
     CBuffer buf = CBuffer();
 
@@ -139,10 +69,8 @@ int main(int argc, char* argv[])
     std::vector<SVertex> vert_buf = obj.vertex_buf();
     for (auto& vert : vert_buf)
     {
-        vert = vertex_shader.apply(vert);
-
-        srand(seed ^ int(vert.point.x) ^
-                     int(vert.point.y) ^ 
+        srand(seed ^ int(vert.point.x*4000.0f) ^
+                     int(vert.point.y*2000.0f) ^ 
                      int(vert.point.z*1000.0f));
 
         vert.color = SColor(float(rand()&0xFF)/255.0f,
@@ -160,17 +88,32 @@ int main(int argc, char* argv[])
                 vert.point.x, vert.point.y, vert.point.z,
                 vert.point.w);
 
-    SVertex vert_arr[3] = {};
-    for (const auto& face : obj.index_buf())
+    buf.clear();
+    rasterizer.clear();
+ 
+    SMatrix cur_mtx = SMatrix();
+    while(true)
     {
-        for (size_t i = 0; i < 3; ++i)
-            vert_arr[i] = vert_buf[face.arr[i]];
+        cur_mtx *= SMatrix(SVector(sqrtf(3.0f)*0.5f, 0.0f, -0.5f, 0.0f),
+                           SVector(0.0f, 1.0f, 0.0f, 0.0f),
+                           SVector(0.5f, 0.0f,  sqrtf(3.0f)*0.5f, 0.0f));
 
-        rasterizer.fill_face(vert_arr);
-    } 
+        CVertexShader vertex_shader = CVertexShader(scr_mtx*cam_mtx*cur_mtx);
+        
+        SVertex vert_arr[3] = {};
+        for (const auto& face : obj.index_buf())
+        {
+            for (size_t i = 0; i < 3; ++i)
+                vert_arr[i] = vertex_shader.apply(vert_buf[face.arr[i]]);
 
-    buf.render(rasterizer.frag_vec());
-    scr.write(buf.data(), buf.byte_size());
+            rasterizer.fill_face(vert_arr);
+        } 
+
+        buf.render(rasterizer.frag_vec());
+        scr.write(buf.data(), buf.byte_size());
+        buf.clear();
+        rasterizer.clear();
+    }
 
     if (obj_file)
     {
