@@ -43,10 +43,11 @@ int main(int argc, char* argv[])
 
     CObject obj = CObject();
     obj.parse_from(obj_file);
-    obj.write_to(stdout);
+    //obj.write_to(stdout);
 
-    CCamera cam = CCamera(SVector(0.75f, 1.25f, 1.0f), 
-                          SVector(-0.75f, -1.25f, -1.0f));
+    SVector cam_pos = SVector(0.0f, 1.0f, 2.0f);//SVector(0.75f, 1.25f, 1.0f);
+    SVector cam_dir = SVector(0.0f, 0.0f, -2.0f);//SVector(-0.75f, -1.25f, -1.0f);
+    CCamera cam = CCamera(cam_pos, cam_dir);
 
     float x_scale =  0.5f*float(CBuffer::DIM_H);
     float y_scale = -0.5f*float(CBuffer::DIM_H);
@@ -77,7 +78,7 @@ int main(int argc, char* argv[])
                             float(rand()&0xFF)/255.0f,
                             float(rand()&0xFF)/255.0f); 
     }
-
+/*
     for (auto& vert : vert_buf)
         printf("color: %.3f %.3f %.3f %.3f \n",
                 vert.color.r, vert.color.g, vert.color.b,
@@ -87,12 +88,12 @@ int main(int argc, char* argv[])
         printf("vector: %.3f %.3f %.3f %.3f \n",
                 vert.point.x, vert.point.y, vert.point.z,
                 vert.point.w);
-
-    buf.clear();
+*/
+//    buf.clear();
     rasterizer.clear();
  
     SMatrix cur_mtx = SMatrix();
-    while(true)
+//    while(true)
     {
         cur_mtx *= SMatrix(SVector(sqrtf(3.0f)*0.5f, 0.0f, -0.5f, 0.0f),
                            SVector(0.0f, 1.0f, 0.0f, 0.0f),

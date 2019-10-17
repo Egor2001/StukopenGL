@@ -111,7 +111,7 @@ bool CObject::parse_from(FILE* obj_file)
             }
 
             char* it = cur_line;
-            while(isspace(*it)) ++it;
+            while (isspace(*it)) ++it;
             
             switch (*it)
             {
@@ -147,31 +147,59 @@ bool CObject::parse_from(FILE* obj_file)
                     ++it;
                     if (isspace(*it))
                     {
-                        size_t vector_idx_arr[3] = {};
-                        size_t normal_idx_arr[3] = {};
+                        auto vector_idx_vec = std::vector<size_t>(); 
+                        auto normal_idx_vec = std::vector<size_t>();
 
-                        sscanf(it, "%lu/%*u/%lu" 
-                                   "%lu/%*u/%lu" 
-                                   "%lu/%*u/%lu",
-                               vector_idx_arr+0, normal_idx_arr+0, 
-                               vector_idx_arr+1, normal_idx_arr+1, 
-                               vector_idx_arr+2, normal_idx_arr+2);
+                        size_t cur_i = 0;
+                        int is_scanned = 2;
+                        for (cur_i = 0; *it && (is_scanned == 2); ++cur_i)
+                        {
+                            while (std::isspace(*it)) ++it;
+                            if (!(*it)) 
+                                break;
 
-                        SObjIndex cur_index = SObjIndex();
-                        for (size_t i = 0; i < 3; ++i)
+                            size_t cur_vector_idx = 0;
+                            size_t cur_normal_idx = 0;
+                            is_scanned = sscanf(it, "%lu/%*u/%lu",
+                                                &cur_vector_idx,
+                                                &cur_normal_idx);
+
+                            if (is_scanned == 2)
+                            {
+                                vector_idx_vec.push_back(cur_vector_idx);
+                                normal_idx_vec.push_back(cur_normal_idx);
+                            }
+                            else
+                                break;
+
+                            while (!std::isspace(*it)) ++it;
+                        }
+
+                        size_t cnt_scanned = cur_i;
+
+                        auto cur_index_vec = std::vector<size_t>();
+                        for (cur_i = 0; cur_i < cnt_scanned; ++cur_i)
                         {
                             SVertex cur_vertex = SVertex();
 
-                            size_t cur_vector_idx = vector_idx_arr[i]-1; 
-                            size_t cur_normal_idx = normal_idx_arr[i]-1;
+                            size_t cur_vector_idx = vector_idx_vec[cur_i]-1; 
+                            size_t cur_normal_idx = normal_idx_vec[cur_i]-1;
                             cur_vertex.point  = vector_temp_buf[cur_vector_idx];
                             cur_vertex.normal = normal_temp_buf[cur_normal_idx];
 
-                            cur_index.arr[i] = vertex_buf_.size();
+                            cur_index_vec.push_back(vertex_buf_.size());
                             vertex_buf_.push_back(cur_vertex);
                         }
 
-                        index_buf_.push_back(cur_index);
+                        SObjIndex cur_index = SObjIndex();
+                        cur_index.arr[0] = cur_index_vec[0];
+                        for (size_t i = 1; i+1 < cur_index_vec.size(); ++i)
+                        {
+                            cur_index.arr[1] = cur_index_vec[i+0];
+                            cur_index.arr[2] = cur_index_vec[i+1];
+
+                            index_buf_.push_back(cur_index);
+                        }
                     }
                 }
                 break;
@@ -221,7 +249,7 @@ bool CObject::write_to(FILE* obj_file) const
         fprintf(obj_file, "#indices: \n");
         for (const auto& index : index_buf_)
         {
-            fprintf(obj_file, "f %lu//%lu %lu//%lu %lu//%lu \n",
+            fprintf(obj_file, "f %lu//%lu %lu//%lu %lu//%lu\n",
                     index.arr[0] + 1, index.arr[0] + 1,
                     index.arr[1] + 1, index.arr[1] + 1,
                     index.arr[2] + 1, index.arr[2] + 1);
