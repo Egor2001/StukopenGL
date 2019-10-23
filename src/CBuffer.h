@@ -7,6 +7,7 @@
 #include <cstdint>
 
 //buffer
+#include <wchar.h>
 #include <cfloat>
 #include <vector>
 #include "ShaderStructures.h"
@@ -71,11 +72,17 @@ public:
 
     void clear()
     {
+        SBufColor color_val = SBufColor();
+        float     depth_val = FLT_MAX;
+        wmemset((wchar_t*)color_buf_, *((wchar_t*)&color_val), DIM_W*DIM_H);
+        wmemset((wchar_t*)depth_buf_, *((wchar_t*)&depth_val), DIM_W*DIM_H);
+        /*
         for (size_t i = 0; i < DIM_W*DIM_H; ++i)
         {
             color_buf_[i] = {0xFF, 0xFF, 0xFF, 0xFF};
             depth_buf_[i] = FLT_MAX;
         }
+        */
     }
 
 private:

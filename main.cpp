@@ -24,6 +24,76 @@
 #include "src/CCamera.h"
 #include "src/CVertexShader.h"
 #include "src/CVertexShader.h"
+#include "src/CLight.h"
+#include "src/CLight.h"
+
+class CPerspective
+{
+public:
+    CPerspective(float near_set, float far_set);
+
+    CPerspective             (const CPerspective&);
+    CPerspective& operator = (const CPerspective&);
+    CPerspective             (CPerspective&&);
+    CPerspective& operator = (CPerspective&&);
+
+    ~CPerspective();
+
+    SMatrix get_matrix() const;
+
+private:
+    float near_;
+    float far_;
+};
+
+CPerspective::CPerspective(float near_set, float far_set):
+    near_(near_set),
+    far_ (far_set)
+{}
+
+CPerspective::CPerspective(const CPerspective& copy_perspective):
+    near_(copy_perspective.near_),
+    far_ (copy_perspective.far_)
+{}
+
+CPerspective& CPerspective::operator = (const CPerspective& copy_perspective)
+{
+    near_ = copy_perspective.near_;
+    far_  = copy_perspective.far_;
+
+    return *this;
+}
+
+CPerspective::CPerspective(CPerspective&& move_perspective):
+    near_(std::move(move_perspective.near_)),
+    far_ (std::move(move_perspective.far_))
+{}
+
+CPerspective& CPerspective::operator = (CPerspective&& move_perspective)
+{
+    std::swap(near_, move_perspective.near_);
+    std::swap(far_,  move_perspective.far_);
+
+    return *this;
+}
+
+CPerspective::~CPerspective()
+{
+    near_ = far_ = 0.0f;
+}
+
+SMatrix CPerspective::get_matrix() const
+{
+    float mat33 = -(far_ + near_)/(far_ - near_);
+    float mat34 = -(2*far_*near_)/(far_ - near_);
+
+    SMatrix result = SMatrix(SVector(near_, 0.0f, 0.0f, 0.0f),
+                             SVector(0.0f, near_, 0.0f, 0.0f),
+                             SVector(0.0f, 0.0f, mat33, mat34),
+                             SVector(0.0f, 0.0f, -1.0f, 0.0f));
+
+    return result;
+}
 
 int main(int argc, char* argv[])
 {
@@ -45,9 +115,13 @@ int main(int argc, char* argv[])
     obj.parse_from(obj_file);
     //obj.write_to(stdout);
 
-    SVector cam_pos = SVector(0.0f, 1.0f, 2.0f);//SVector(0.75f, 1.25f, 1.0f);
-    SVector cam_dir = SVector(0.0f, 0.0f, -2.0f);//SVector(-0.75f, -1.25f, -1.0f);
-    CCamera cam = CCamera(cam_pos, cam_dir);
+    SVector cam_pos = SVector(0.0f, 1.0f, 2.0f);
+    SVector cam_dir = SVector(0.0f, 0.0f, -2.0f);
+
+    CCamera cam   = CCamera(cam_pos, cam_dir);
+    CLight  light = CLight (SVector(1.0f, 1.0f, -1.0f, 0.0f), 
+                            SColor(1.0f, 1.0f, 1.0f, 1.0f));
+    CPerspective proj = CPerspective(0.1f, 10.0f);
 
     float x_scale =  0.5f*float(CBuffer::DIM_H);
     float y_scale = -0.5f*float(CBuffer::DIM_H);
@@ -56,58 +130,45 @@ int main(int argc, char* argv[])
     float y_shift = 0.5f*float(CBuffer::DIM_H);
 
     SMatrix cam_mtx = cam.get_matrix();
-    SMatrix scr_mtx = SMatrix(SVector(x_scale, 0.0f, 0.0f, x_shift), 
+    SMatrix buf_mtx = SMatrix(SVector(x_scale, 0.0f, 0.0f, x_shift), 
                               SVector(0.0f, y_scale, 0.0f, y_shift), 
                               SVector(0.0f, 0.0f, 1.0f, 0.0f)); 
+    SMatrix proj_mtx = proj.get_matrix();
 
     CScreen scr = CScreen();
     CBuffer buf = CBuffer();
 
-    CRasterizer rasterizer = CRasterizer();
+    CRasterizer rasterizer = CRasterizer(float(CBuffer::DIM_W), 
+                                         float(CBuffer::DIM_H));
 
-    auto seed = time(NULL);
-
-    std::vector<SVertex> vert_buf = obj.vertex_buf();
-    for (auto& vert : vert_buf)
-    {
-        srand(seed ^ int(vert.point.x*4000.0f) ^
-                     int(vert.point.y*2000.0f) ^ 
-                     int(vert.point.z*1000.0f));
-
-        vert.color = SColor(float(rand()&0xFF)/255.0f,
-                            float(rand()&0xFF)/255.0f,
-                            float(rand()&0xFF)/255.0f); 
-    }
-/*
-    for (auto& vert : vert_buf)
-        printf("color: %.3f %.3f %.3f %.3f \n",
-                vert.color.r, vert.color.g, vert.color.b,
-                vert.color.a);
-
-    for (auto& vert : vert_buf)
-        printf("vector: %.3f %.3f %.3f %.3f \n",
-                vert.point.x, vert.point.y, vert.point.z,
-                vert.point.w);
-*/
+//    auto seed = time(NULL);
 //    buf.clear();
     rasterizer.clear();
  
     SMatrix cur_mtx = SMatrix();
-//    while(true)
+    float delta = M_PI/16.0f;
+    float ang = 0.0f;
+    while(true)
     {
-        cur_mtx *= SMatrix(SVector(sqrtf(3.0f)*0.5f, 0.0f, -0.5f, 0.0f),
-                           SVector(0.0f, 1.0f, 0.0f, 0.0f),
-                           SVector(0.5f, 0.0f,  sqrtf(3.0f)*0.5f, 0.0f));
+        ang += delta;
+        cur_mtx = SMatrix(SVector(cosf(ang), 0.0f, -sinf(ang), 0.0f),
+                          SVector(0.0f,      1.0f,       0.0f, 0.0f),
+                          SVector(sinf(ang), 0.0f,  cosf(ang), 0.0f));
 
-        CVertexShader vertex_shader = CVertexShader(scr_mtx*cam_mtx*cur_mtx);
+        CVertexShader vertex_shader = CVertexShader(buf_mtx*cam_mtx*cur_mtx);
         
         SVertex vert_arr[3] = {};
         for (const auto& face : obj.index_buf())
         {
             for (size_t i = 0; i < 3; ++i)
-                vert_arr[i] = vertex_shader.apply(vert_buf[face.arr[i]]);
+            {
+                vert_arr[i] = obj.vertex_buf()[face.arr[i]]; 
+                vert_arr[i].color = SColor(0.5f, 0.5f, 0.5f);
+                vert_arr[i] = light.apply(vertex_shader.apply(vert_arr[i]));
+            }
 
             rasterizer.fill_face(vert_arr);
+//            rasterizer.rast_face(vert_arr[0], vert_arr[1], vert_arr[2]);
         } 
 
         buf.render(rasterizer.frag_vec());

@@ -20,7 +20,7 @@ all: $(EXECUTABLE)
 
 .PHONY: tags clean
 
-$(EXECUTABLE): $(SOURCES) $(OBJFILE) 
+$(EXECUTABLE): $(OBJFILE) 
 	$(LD) -o $(EXECUTABLE) $(OBJFILE)
 
 $(OBJFILE): $(SOURCES) 
@@ -31,5 +31,4 @@ tags:
 
 clean:
 	rm $(BINDIR)/*.o
-
 

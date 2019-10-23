@@ -33,7 +33,7 @@ public:
 
     int write(const void* src, size_t cnt)    
     {
-        int result = ::write(fb_file_, src, cnt);
+        int result = ::pwrite(fb_file_, src, cnt, 0);
         fsync(fb_file_);
 
         return result;

@@ -140,6 +140,7 @@ SVector vector_mul(const SVector& right, const SVector& left)
     return result;
 }
 
+//TODO:split SVector to SVector and SNormal
 float scalar_mul(const SVector& right, const SVector& left)
 {
     float result = 0.0f;
@@ -150,8 +151,6 @@ float scalar_mul(const SVector& right, const SVector& left)
 
     if (fabs(right.w*left.w) > FLT_EPSILON)
         result /= (right.w*left.w);
-    else
-        result = FLT_MAX;
 
     return result;
 }
@@ -166,7 +165,7 @@ SVector unitary(const SVector& vector)
     SVector result;
 
     if (fabs(vector.w) < FLT_EPSILON)
-        result = SVector(FLT_MAX, FLT_MAX, FLT_MAX, 1.0f);
+        result = vector;
     else
         result = vector*(1.0f/vector.w);
 

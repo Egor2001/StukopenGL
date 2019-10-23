@@ -10,6 +10,7 @@ struct SColor;
 
 SColor interpolate(const SColor& beg_c, const SColor& end_c, float ratio);
 SColor alpha_blend(const SColor& beg_c, const SColor& end_c);
+SColor operator * (const SColor& color, float scale);
 
 struct SColor
 {
@@ -53,6 +54,15 @@ SColor alpha_blend(const SColor& beg_c, const SColor& end_c)
         ratio = (end_c.a / sum_alpha);  
     
     result = interpolate(beg_c, end_c, ratio);
+
+    return result;
+}
+
+SColor operator * (const SColor& color, float scale)
+{
+    SColor result = color;
+
+    result = interpolate(SColor(), color, scale); 
 
     return result;
 }

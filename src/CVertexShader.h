@@ -78,7 +78,7 @@ CVertexShader::out_t CVertexShader::apply(const in_t& in) const
     out_t result = out_t();
 
     result.point  = unitary(mtx_*in.point); 
-    result.normal =              in.normal; 
+    result.normal = normal (mtx_*in.normal); 
     result.color  =              in.color;
  
     return result;

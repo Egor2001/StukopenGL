@@ -21,7 +21,7 @@
 class CRasterizer
 {
 public:
-    CRasterizer();
+    CRasterizer(float max_x_set, float max_y_set);
 
     CRasterizer             (const CRasterizer&) = delete;
     CRasterizer& operator = (const CRasterizer&) = delete;
@@ -56,32 +56,40 @@ public:
     void fill_xseq(const SVertex& beg_v, const SVertex& end_v);
 
     //TODO: make it static
-    SVertex interpolate(const SVertex& beg_v, const SVertex& end_v, 
-                        float ratio);
-
-    //TODO: make it static
     SFragment get_fragment(const SVertex& vertex);
 
 private:
     std::vector<SFragment> frag_vec_;
+
+    float max_x_;
+    float max_y_;
 };
 
-CRasterizer::CRasterizer():
-    frag_vec_()
+CRasterizer::CRasterizer(float max_x_set, float max_y_set):
+    frag_vec_(),
+    max_x_(max_x_set),
+    max_y_(max_y_set)
 {}
 
 CRasterizer::CRasterizer(CRasterizer&& move_rast):
-    frag_vec_(std::move(move_rast.frag_vec_))
+    frag_vec_(std::move(move_rast.frag_vec_)),
+    max_x_   (std::move(move_rast.max_x_)),
+    max_y_   (std::move(move_rast.max_y_))
 {}
 
 CRasterizer& CRasterizer::operator = (CRasterizer&& move_rast)
 {
-    frag_vec_ = std::move(move_rast.frag_vec_);
+    std::swap(frag_vec_, move_rast.frag_vec_);
+    std::swap(max_x_,    move_rast.max_x_);
+    std::swap(max_y_,    move_rast.max_y_);
+
     return *this;
 }
 
 CRasterizer::~CRasterizer()
 {
+    max_x_ = max_y_ = 0;
+
     frag_vec_.clear();
 }
 
@@ -90,12 +98,12 @@ void CRasterizer::rast_line(const SVertex& beg_v,
 {
     size_t step_cnt = std::max(size_t(fabs(end_v.point.x - beg_v.point.x)),
                                size_t(fabs(end_v.point.y - beg_v.point.y)));
-    
+
     for (size_t cur_step = 0; cur_step < step_cnt; ++cur_step)
     {
         //step_cnt to-float conversion should be optimized
         float ratio = (float(cur_step) / float(step_cnt));
-        SVertex cur_vertex = interpolate(beg_v, end_v, ratio);
+        SVertex cur_vertex = ::interpolate(beg_v, end_v, ratio);
 
         frag_vec_.push_back(get_fragment(cur_vertex));
     }
@@ -117,14 +125,9 @@ void CRasterizer::fill_face(const SVertex v_arr[3])
     SVertex mid_v = v_arr[1]; 
     SVertex end_v = v_arr[2]; 
 
-    if (beg_v.point.y < mid_v.point.y)
-        std::swap(beg_v, mid_v);
-
-    if (mid_v.point.y < end_v.point.y)
-        std::swap(mid_v, end_v);
-
-    if (beg_v.point.y < mid_v.point.y)
-        std::swap(beg_v, mid_v);
+    if (beg_v.point.y < mid_v.point.y) std::swap(beg_v, mid_v);
+    if (mid_v.point.y < end_v.point.y) std::swap(mid_v, end_v);
+    if (beg_v.point.y < mid_v.point.y) std::swap(beg_v, mid_v);
 
     if (fabs(beg_v.point.y - end_v.point.y) < FLT_EPSILON)
     {
@@ -136,7 +139,7 @@ void CRasterizer::fill_face(const SVertex v_arr[3])
         float ratio = (beg_v.point.y - mid_v.point.y) / 
                       (beg_v.point.y - end_v.point.y);
 
-        SVertex div_v = interpolate(beg_v, end_v, ratio);
+        SVertex div_v = ::interpolate(beg_v, end_v, ratio);
 
         fill_half(div_v, mid_v, beg_v);
         fill_half(div_v, mid_v, end_v);
@@ -153,8 +156,8 @@ void CRasterizer::fill_half(const SVertex& beg_v, const SVertex& end_v,
     {
         float ratio = (float(cur_step) / float(step_cnt));
 
-        SVertex cur_beg_v = interpolate(top_v, beg_v, ratio);
-        SVertex cur_end_v = interpolate(top_v, end_v, ratio);
+        SVertex cur_beg_v = ::interpolate(top_v, beg_v, ratio);
+        SVertex cur_end_v = ::interpolate(top_v, end_v, ratio);
         
         fill_xseq(cur_beg_v, cur_end_v);
     }
@@ -169,26 +172,10 @@ void CRasterizer::fill_xseq(const SVertex& beg_v,
     for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
     {
         float ratio = (float(cur_step) / float(step_cnt));
-        SVertex cur_vertex = interpolate(beg_v, end_v, ratio);
+        SVertex cur_vertex = ::interpolate(beg_v, end_v, ratio);
 
         frag_vec_.push_back(get_fragment(cur_vertex));
     }
-}
-
-SVertex CRasterizer::interpolate(const SVertex& beg_v, const SVertex& end_v, 
-                                 float ratio)
-{
-    SVertex result = {};
-
-    result.point = (beg_v.point * (1.0f - ratio) + 
-                    end_v.point *         ratio);
-
-    result.normal = (beg_v.normal * (1.0f - ratio) + 
-                     end_v.normal *         ratio);
-
-    result.color = ::interpolate(beg_v.color, end_v.color, ratio);
-
-    return result;
 }
 
 SFragment CRasterizer::get_fragment(const SVertex& vertex)
@@ -213,7 +200,8 @@ int test_CRasterizer()
     
     CScreen scr = CScreen();
     CBuffer buf = CBuffer();
-    CRasterizer rasterizer = CRasterizer();
+    CRasterizer rasterizer = CRasterizer(float(CBuffer::DIM_W),
+                                         float(CBuffer::DIM_H));
 
     const size_t LINE_CNT = 0x100;
     for (size_t i = 0; i < LINE_CNT; ++i)
