@@ -166,6 +166,7 @@ void CRasterizer::fill_half(const SVertex& beg_v, const SVertex& end_v,
 void CRasterizer::fill_xseq(const SVertex& beg_v, 
                             const SVertex& end_v)
 {
+/*
     size_t step_cnt = size_t(roundf(fabs(beg_v.point.x - 
                                          end_v.point.x)));
 
@@ -175,6 +176,26 @@ void CRasterizer::fill_xseq(const SVertex& beg_v,
         SVertex cur_vertex = ::interpolate(beg_v, end_v, ratio);
 
         frag_vec_.push_back(get_fragment(cur_vertex));
+    }
+*/
+    size_t seq_y = size_t(roundf(beg_v.point.x));
+    size_t beg_x = size_t(fmax(0.0f, fmin(roundf(beg_v.point.x), max_x_)));
+    size_t end_x = size_t(fmax(0.0f, fmin(roundf(end_v.point.x), max_x_)));
+
+    SFragment::SFragColor beg_frag_color =  
+
+    if (beg_x <= end_x && 
+        beg_v.point.y > 0.0f && 
+        beg_v.point.y < max_y_)
+    {
+        size_t delta_x = end_x - beg_x;
+
+        float cur_ratio = 0.0f;
+        for (size_t x = 0; x <= delta_x; ++x)
+        {
+            cur_ratio = float(x)/float(delta_x);
+            
+        }
     }
 }
 

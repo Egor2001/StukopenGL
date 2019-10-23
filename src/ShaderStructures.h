@@ -5,50 +5,69 @@
 #include <cstdint>
 #include <cfloat>
 
+//intrinsics (vectorization)
+#include <immintrin.h>
+
 //vertex
 #include "SVector.h"
 #include "SColor.h"
 
 //namespace sgl {
 
-struct SFragment
-{
-    struct SFragColor
-    {
-        uint8_t r, g, b, a;
-    };
+struct SVertex;
+struct SFragment;
 
-    size_t x, y;
-    float      depth;
-    SFragColor color;
+SFragment to_fragment(const SVertex& vertex);
+SFragment interpolate(const SFragment& beg, const SFragment& end, 
+                      float ratio)
+
+struct alignas(alignof(SVectorExt)) SVertex
+{
+    SVectorExt point;
+    SVector    normal;
+    SColor3    color;
+    float      tex_u;
+    float      tex_v;
 };
 
-struct SVertex
+struct alignas(32) SFragment
 {
-    struct SVertColor
-    {
-        float r, g, b;
-    };
+    SFragment(const SVector& point_set, const SVector& color_set, 
+              float tex_u_set = 0.0f, float tex_v_set = 0.0f):
+        point(point_set), color(color_set), 
+        tex_u(tex_u_set), tex_v(tex_v_set)
+    {}
 
-    SVector point;
-    SVector normal;
-    SColor  color;
+    explicit SFragment(__m256 as_ymm_set):
+        as_ymm(as_ymm_set) 
+    {}
+
+    union 
+    {
+        struct
+        {
+            SVector point; 
+            SColor3 color;
+            float   tex_u;
+            float   tex_v;
+        }
+
+        __m256 as_ymm;
+    }
 };
 
-SVertex interpolate(const SVertex& beg_v, const SVertex& end_v,
-                    float ratio)
+SFragment to_fragment(const SVertex& vertex)
 {
-    SVertex result = {};
+    return SFragment(to_vector(vertex.point), vertex.color,
+                     vertex.tex_u, vertex.tex_v);
+}
 
-    result.point = (beg_v.point * (1.0f - ratio) +
-                    end_v.point *         ratio);
-
-//    result.normal = (beg_v.normal * (1.0f - ratio) +
-//                     end_v.normal *         ratio);
-
-    result.color = ::interpolate(beg_v.color, end_v.color, ratio);
-
-    return result;
+SFragment interpolate(const SFragment& beg, const SFragment& end, 
+                      float ratio)
+{
+    return SFragment(_mm256_fnmadd_ps(_mm256_set1_ps(ratio),
+                                      _mm256_add_ps(beg.as_ymm, end.as_ymm),
+                                      beg.as_ymm);
 }
 
 //} //namespace sgl

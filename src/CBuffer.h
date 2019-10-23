@@ -23,8 +23,12 @@ public:
     static const size_t DIM_W = 1376;
     static const size_t DIM_H = 768;
 
-    using SBufFragment = SFragment;
-    using SBufColor    = SFragment::SFragColor;
+    struct SBufColor
+    {
+        uint8_t x, y, z, a;
+    };
+
+    using SBufColor = SFragment::SFragColor;
 
 public:
     CBuffer();
@@ -52,21 +56,28 @@ public:
         return color_buf_;
     }
 
-    void render(const std::vector<SBufFragment>& frag_vec)
+    void render(const std::vector<SFragment>& frag_vec)
     {
         for (const auto& frag : frag_vec)
             render_frag(frag);
     }
 
-    void render_frag(const SBufFragment& frag)
+    void render_frag(const SFragment& frag)
     {
-        size_t idx = DIM_W*frag.y + frag.x; 
+        size_t x = size_t(roundf(frag.point.x));
+        size_t y = size_t(roundf(frag.point.y));
 
-        if (frag.x < DIM_W && frag.y < DIM_H &&
-            frag.depth < depth_buf_[idx])
+        size_t idx = DIM_W*y + x; 
+
+        if (x < DIM_W && y < DIM_H &&
+            frag.point.x < depth_buf_[idx])
         {
-            color_buf_[idx] = frag.color;
-            depth_buf_[idx] = frag.depth;
+            color_buf_[idx].r = uint8_t(255.0f*frag.color.r);
+            color_buf_[idx].g = uint8_t(255.0f*frag.color.g);
+            color_buf_[idx].b = uint8_t(255.0f*frag.color.b);
+            color_buf_[idx].a = 255;
+
+            depth_buf_[idx] = frag.point.x;
         }
     }
 
@@ -76,13 +87,6 @@ public:
         float     depth_val = FLT_MAX;
         wmemset((wchar_t*)color_buf_, *((wchar_t*)&color_val), DIM_W*DIM_H);
         wmemset((wchar_t*)depth_buf_, *((wchar_t*)&depth_val), DIM_W*DIM_H);
-        /*
-        for (size_t i = 0; i < DIM_W*DIM_H; ++i)
-        {
-            color_buf_[i] = {0xFF, 0xFF, 0xFF, 0xFF};
-            depth_buf_[i] = FLT_MAX;
-        }
-        */
     }
 
 private:
@@ -134,17 +138,17 @@ int test_CBuffer()
     CBuffer buf = CBuffer();
 
     const size_t SIZE = buf.size();
-    auto frag_vec = std::vector<CBuffer::SBufFragment>(SIZE);
+    auto frag_vec = std::vector<CBuffer::SFragment>(SIZE);
 
     for (size_t i = 0; i < SIZE; ++i)
     {
         frag_vec[i].x = rand()%CBuffer::DIM_W;
         frag_vec[i].y = rand()%CBuffer::DIM_H;
 
-        frag_vec[i].color.r = rand()&0xFF;    
-        frag_vec[i].color.g = rand()&0xFF;    
-        frag_vec[i].color.b = rand()&0xFF;    
-        frag_vec[i].color.a = rand()&0xFF;    
+        frag_vec[i].color.r = float(rand()&0xFF)/255.0f;    
+        frag_vec[i].color.g = float(rand()&0xFF)/255.0f;    
+        frag_vec[i].color.b = float(rand()&0xFF)/255.0f;    
+        frag_vec[i].color.a = 1.0f;    
     }
 
     buf.render(frag_vec);
