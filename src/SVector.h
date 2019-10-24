@@ -16,18 +16,18 @@
 //namespace sgl {
 
 struct SVector;
-struct SVectorExt;
 
-SVectorExt operator + (const SVectorExt& right, const SVectorExt& left);
-SVectorExt operator - (const SVectorExt& right, const SVectorExt& left);
-SVectorExt operator * (const SVectorExt& vector, float scale); 
-    
-SVectorExt vector_mul(const SVectorExt& right, const SVectorExt& left);
-float      scalar_mul(const SVectorExt& right, const SVectorExt& left);
+SVector operator - (const SVector&);
 
-float      abs    (const SVectorExt& vector);
-SVectorExt unitary(const SVectorExt& vector);
-SVectorExt normal (const SVectorExt& vector);
+SVector operator + (const SVector&, const SVector&);
+SVector operator - (const SVector&, const SVector&);
+SVector operator * (const SVector&, float);
+
+float   dot(const SVector&, const SVector&);
+SVector mul(const SVector&, const SVector&);
+float   abs(const SVector&);
+
+SVector normal(const SVector&);
 
 struct SVector
 {
@@ -35,188 +35,132 @@ public:
     SVector();
     SVector(float x_set, float y_set, float z_set);
 
-    float  
-        
-    float x, y, z;
-};
 
-struct SVectorExt
-{
-public:
-    SVectorExt();
-    SVectorExt(float x_set, float y_set, float z_set, float w_set = 1.0f);
-    SVectorExt(const float vec_set[4]);
+    SVector& operator += (const SVector& add); 
+    SVector& operator -= (const SVector& sub); 
+    SVector& operator *= (float scale); 
 
-          float& operator [] (size_t idx)       noexcept;
-    const float& operator [] (size_t idx) const noexcept;
-       
-    SVectorExt operator - () const;
+    SVector& normalize();
 
-    SVectorExt& operator += (const SVectorExt& add);
-    SVectorExt& operator -= (const SVectorExt& sub);
-    SVectorExt& operator *= (float scale);
-
-public:
     union
     {
-        struct { float x, y, z, w; }
-        float vec[4];
-        __m128 as_xmm;
-    }
+        struct { float x, y, z; };
+        float vec[3];
+    };
 };
 
-SVectorExt::SVectorExt():
-    as_xmm(_mm_set_ps(0.0f, 0.0f, 0.0f, 1.0f)) 
+SVector::SVector():
+    x(0.0f), y(0.0f), z(0.0f)
 {}
 
-SVectorExt::SVectorExt(float x_set, float y_set, float z_set, float w_set):
-    as_xmm(_mm_set_ps(x_set, y_set, z_set, w_set)) 
+SVector::SVector(float x_set, float y_set, float z_set):
+    x(x_set), y(y_set), z(z_set)
 {}
 
-SVectorExt::SVectorExt(const float vec_set[4]):
-    as_xmm(_mm_load_ps(vec_set)) 
-{}
-
-float& SVectorExt::operator [] (size_t idx) noexcept
+SVector& SVector::operator += (const SVector& add) 
 {
-    return vec[idx];
-}
-
-const float& SVectorExt::operator [] (size_t idx) const noexcept
-{
-    return vec[idx];
-}
-
-SVectorExt SVectorExt::operator - () const
-{
-    return SVectorExt(-x, -y, -z, w);
-}
-
-SVectorExt& SVectorExt::operator += (const SVectorExt& add)
-{
-    float new_w = w*add.w;
-    as_xmm = _mm_madd_ps(_mm_set1_ps(add.w), as_xmm, 
-                         _mm_mul_ps(_mm_set1_ps(w), add.as_xmm));
-
-    w = new_w;
+    for (size_t i = 0; i < 3; ++i)
+        vec[i] += add.vec[i];
 
     return *this;
 }
 
-SVectorExt& SVectorExt::operator -= (const SVectorExt& sub)
+SVector& SVector::operator -= (const SVector& sub) 
 {
-    float new_w = w*sub.w;
-    as_xmm = _mm_msub_ps(_mm_set1_ps(sub.w), as_xmm, 
-                         _mm_mul_ps(_mm_set1_ps(w), sub.as_xmm));
-
-    w = new_w;
+    for (size_t i = 0; i < 3; ++i)
+        vec[i] -= sub.vec[i];
 
     return *this;
 }
 
-SVectorExt& SVectorExt::operator *= (float scale)
+SVector& SVector::operator *= (float scale)
 {
-    float new_w = w;
-    as_xmm = _mm_mul_ps(_mm_set1_ps(scale), as_xmm);
-
-    w = new_w;
+    for (size_t i = 0; i < 3; ++i)
+        vec[i] *= scale;
 
     return *this;
 }
 
-SVectorExt operator + (const SVectorExt& right, const SVectorExt& left)
+SVector& SVector::normalize()
 {
-    SVectorExt result = right;
-    return (result += left);    
+    float len = sqrtf(x*x + y*y + z*z);
+    if (len > FLT_EPSILON)
+        return ((*this) *= (1.0f/len));
+
+    return *this;
 }
 
-SVectorExt operator - (const SVectorExt& right, const SVectorExt& left)
+SVector operator - (const SVector& vec)
 {
-    SVectorExt result = right;
-    return (result -= left);    
+    return SVector(-vec.x, -vec.y, -vec.z);
 }
 
-SVectorExt operator * (const SVectorExt& vector, float scale) 
+SVector operator + (const SVector& lhs, const SVector& rhs)
 {
-    SVectorExt result = vector;
-    return (result *= scale);    
+    SVector result = lhs;
+    return (result + rhs);
 }
-    
-SVectorExt vector_mul(const SVectorExt& right, const SVectorExt& left)
-{
-    SVectorExt result;
 
-    result.x = right.y*left.z - right.z*left.y;
-    result.y = right.z*left.x - right.x*left.z;
-    result.z = right.x*left.y - right.y*left.x;
-    result.w = right.w*left.w;
+SVector operator - (const SVector& rhs, const SVector& lhs)
+{
+    SVector result = lhs;
+    return (result -= rhs);
+}
+
+SVector operator * (const SVector& vec, float scale)
+{
+    SVector result = vec;
+    return (result *= scale);
+}
+
+float dot(const SVector& lhs, const SVector& rhs)
+{
+    float result = lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z;
 
     return result;
 }
 
-//TODO:split SVectorExt to SVectorExt and SNormal
-float scalar_mul(const SVectorExt& right, const SVectorExt& left)
+SVector mul(const SVector& lhs, const SVector& rhs)
 {
-    float result = 0.0f;
+    SVector result;
 
-    result += right.x*left.x;
-    result += right.y*left.y;
-    result += right.z*left.z;
-
-    if (fabs(right.w*left.w) > FLT_EPSILON)
-        result /= (right.w*left.w);
+    result.x = rhs.y*lhs.z - rhs.z*lhs.y;
+    result.y = rhs.z*lhs.x - rhs.x*lhs.z;
+    result.z = rhs.x*lhs.y - rhs.y*lhs.x;
 
     return result;
 }
 
-float abs(const SVectorExt& vector)
+float abs(const SVector& vec)
 {
-    return sqrtf(scalar_mul(vector, vector));
-}
-
-SVectorExt unitary(const SVectorExt& vector)
-{
-    SVectorExt result;
-
-    if (fabs(vector.w) < FLT_EPSILON)
-        result = vector;
-    else
-        result = vector*(1.0f/vector.w);
-
-    return result; 
-}
-
-SVectorExt normal(const SVectorExt& vector)
-{
-    SVectorExt result; 
-
-    float length = abs(vector);
-    if (length < FLT_EPSILON)
-        result = SVectorExt();
-    else
-        result = unitary(vector*(1.0f/length));
-
-    result.w = 0.0f;
+    float result = sqrtf(dot(vec, vec));
 
     return result;
 }
 
-int test_SVectorExt()
+SVector normal(const SVector& vec)
 {
-    SVectorExt vec1 = SVectorExt(0.5f, 6.7f, -3.4f);
-    SVectorExt vec2 = SVectorExt(-4.3f, 0.1f, 2.6f, 0.5f);
+    SVector result = vec*(1.0f/abs(vec));
 
-    SVectorExt add = vec1 + vec2;
-    SVectorExt sub = vec1 - vec2;
-    SVectorExt mul_vec = vector_mul(vec1, vec2);
-    float      mul_scal = scalar_mul(vec1, vec2);
+    return result;
+}
 
-    printf("vec1    %f %f %f %f\n", vec1.x, vec1.y, vec1.z, vec1.w);
-    printf("vec2    %f %f %f %f\n", vec2.x, vec2.y, vec2.z, vec2.w);
-    printf("add     %f %f %f %f\n", add.x, add.y, add.z, add.w);
-    printf("sub     %f %f %f %f\n", sub.x, sub.y, sub.z, sub.w);
-    printf("mul_vec %f %f %f %f\n", mul_vec.x, mul_vec.y, mul_vec.z, mul_vec.w);
-    printf("mul_scal %f\n", mul_scal);
+int test_SVector()
+{
+    SVector vec1 = SVector(0.5f, 6.7f, -3.4f);
+    SVector vec2 = SVector(-4.3f, 0.1f, 2.6f);
+
+    SVector add = vec1 + vec2;
+    SVector sub = vec1 - vec2;
+    SVector mul_vec = mul(vec1, vec2);
+    float   mul_dot = dot(vec1, vec2);
+
+    printf("vec1    %f %f %f\n", vec1.x, vec1.y, vec1.z);
+    printf("vec2    %f %f %f\n", vec2.x, vec2.y, vec2.z);
+    printf("add     %f %f %f\n", add.x, add.y, add.z);
+    printf("sub     %f %f %f\n", sub.x, sub.y, sub.z);
+    printf("mul_vec %f %f %f\n", mul_vec.x, mul_vec.y, mul_vec.z);
+    printf("mul_dot %f\n", mul_dot);
 
     return 0;
 }

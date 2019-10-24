@@ -4,12 +4,15 @@
 //general
 #include <cstdio>
 #include <cstdlib>
+#include <cctype>
 #include <cstdint>
 #include <ctime>
 #include <cstring>
+#include <vector>
 
 #include "SVector.h"
 #include "SColor.h" 
+#include "ShaderStructures.h"
 
 //namespace sgl { 
 
@@ -86,8 +89,8 @@ bool CObject::parse_from(FILE* obj_file)
 {
     bool result = false;
 
-    std::vector<SVector> vector_temp_buf;
-    std::vector<SVector> normal_temp_buf;
+    std::vector<SVectorExt> vector_temp_buf;
+    std::vector<SVector>    normal_temp_buf;
 
     if (!obj_file)
         result = false;
@@ -120,19 +123,18 @@ bool CObject::parse_from(FILE* obj_file)
                     ++it;
                     if (isspace(*it))
                     {
-                        SVector cur_vector = SVector();
+                        SVectorExt cur_vector;
                         cur_vector.w = 1.0f;
 
                         sscanf(it, "%f %f %f %f", 
                                &cur_vector.x, &cur_vector.y, &cur_vector.z,
                                &cur_vector.w); //w could be ignored
-
+                        
                         vector_temp_buf.push_back(cur_vector);
                     }
                     else if (*it == 'n' && isspace(*(++it)))
                     {
-                        SVector cur_normal = SVector();
-                        cur_normal.w = 0.0f;
+                        SVector cur_normal;
 
                         sscanf(it, "%f %f %f", 
                                &cur_normal.x, &cur_normal.y, &cur_normal.z);
@@ -233,7 +235,11 @@ bool CObject::write_to(FILE* obj_file) const
         fprintf(obj_file, "#vertex points: \n");
         for (size_t i = 0; i < vert_cnt; ++i)
         {
-            SVector cur_point = unitary(vertex_buf_[i].point);
+            SVector cur_point = narrow(vertex_buf_[i].point);
+                                //SVector(vertex_buf_[i].point.x,
+                                //        vertex_buf_[i].point.y,
+                                //        vertex_buf_[i].point.z);
+
             fprintf(obj_file, "v %.3f %.3f %.3f \n",
                     cur_point.x, cur_point.y, cur_point.z);
         }
@@ -261,16 +267,17 @@ bool CObject::write_to(FILE* obj_file) const
 
 int test_CObject()
 {
-    SVertex tetra[4] = {SVertex{.point=SVector(0.5f, 0.5f, 0.5f),
+    /*
+    SVertex tetra[4] = {SVertex{.point=SVectorExt(0.5f, 0.5f, 0.5f),
                                 .normal=SVector(0.5f, 0.5f, 0.5f),
                                 .color=SColor(1.0f, 1.0f, 1.0f)},
-                        SVertex{.point=SVector(0.5f, -0.5f, 0.5f),
+                        SVertex{.point=SVectorExt(0.5f, -0.5f, 0.5f),
                                 .normal=SVector(0.5f, -0.5f, 0.5f),
                                 .color=SColor(1.0f, 1.0f, 1.0f)},
-                        SVertex{.point=SVector(-0.5f, 0.0f, 0.5f),
+                        SVertex{.point=SVectorExt(-0.5f, 0.0f, 0.5f),
                                 .normal=SVector(-0.5f, 0.0f, 0.5f),
                                 .color=SColor(1.0f, 1.0f, 1.0f)},
-                        SVertex{.point=SVector(0.0f, 0.0f, 0.0f),
+                        SVertex{.point=SVectorExt(0.0f, 0.0f, 0.0f),
                                 .normal=SVector(0.0f, 0.0f, 0.0f),
                                 .color=SColor(1.0f, 1.0f, 1.0f)}};
 
@@ -278,14 +285,14 @@ int test_CObject()
                                             tetra[0], tetra[1], tetra[3],
                                             tetra[0], tetra[2], tetra[3],
                                             tetra[1], tetra[2], tetra[3]});
+    */
+    CObject object;// = CObject(std::move(vertex_buf));
 
-    CObject object = CObject(std::move(vertex_buf));
-
-    FILE* obj_file = fopen("test.obj", "w+");
-
+    FILE* obj_file = fopen("test.obj", "r+");
+/*
     object.write_to(obj_file);
     rewind(obj_file);
-
+*/
     object.parse_from(obj_file);
     object.write_to(stdout);
 

@@ -25,10 +25,8 @@ public:
 
     struct SBufColor
     {
-        uint8_t x, y, z, a;
+        uint8_t r, g, b, a;
     };
-
-    using SBufColor = SFragment::SFragColor;
 
 public:
     CBuffer();
@@ -56,28 +54,28 @@ public:
         return color_buf_;
     }
 
-    void render(const std::vector<SFragment>& frag_vec)
+    void render(const std::vector<SFragment>& fragment_vec)
     {
-        for (const auto& frag : frag_vec)
-            render_frag(frag);
+        for (const auto& fragment : fragment_vec)
+            render_frag(fragment);
     }
 
-    void render_frag(const SFragment& frag)
+    void render_frag(const SFragment& fragment)
     {
-        size_t x = size_t(roundf(frag.point.x));
-        size_t y = size_t(roundf(frag.point.y));
+        size_t x = size_t(roundf(fragment.point.x));
+        size_t y = size_t(roundf(fragment.point.y));
 
         size_t idx = DIM_W*y + x; 
 
         if (x < DIM_W && y < DIM_H &&
-            frag.point.x < depth_buf_[idx])
+            fragment.point.z < depth_buf_[idx])
         {
-            color_buf_[idx].r = uint8_t(255.0f*frag.color.r);
-            color_buf_[idx].g = uint8_t(255.0f*frag.color.g);
-            color_buf_[idx].b = uint8_t(255.0f*frag.color.b);
+            color_buf_[idx].r = uint8_t(255.0f*fragment.color.r);
+            color_buf_[idx].g = uint8_t(255.0f*fragment.color.g);
+            color_buf_[idx].b = uint8_t(255.0f*fragment.color.b);
             color_buf_[idx].a = 255;
 
-            depth_buf_[idx] = frag.point.x;
+            depth_buf_[idx] = fragment.point.z;
         }
     }
 
@@ -138,20 +136,20 @@ int test_CBuffer()
     CBuffer buf = CBuffer();
 
     const size_t SIZE = buf.size();
-    auto frag_vec = std::vector<CBuffer::SFragment>(SIZE);
+
+    auto fragment_vec = std::vector<SFragment>(SIZE);
 
     for (size_t i = 0; i < SIZE; ++i)
     {
-        frag_vec[i].x = rand()%CBuffer::DIM_W;
-        frag_vec[i].y = rand()%CBuffer::DIM_H;
+        fragment_vec[i].point.x = float(rand()%CBuffer::DIM_W);
+        fragment_vec[i].point.y = float(rand()%CBuffer::DIM_H);
 
-        frag_vec[i].color.r = float(rand()&0xFF)/255.0f;    
-        frag_vec[i].color.g = float(rand()&0xFF)/255.0f;    
-        frag_vec[i].color.b = float(rand()&0xFF)/255.0f;    
-        frag_vec[i].color.a = 1.0f;    
+        fragment_vec[i].color.r = float(rand()&0xFF)/255.0f;    
+        fragment_vec[i].color.g = float(rand()&0xFF)/255.0f;    
+        fragment_vec[i].color.b = float(rand()&0xFF)/255.0f;    
     }
 
-    buf.render(frag_vec);
+    buf.render(fragment_vec);
 
     FILE* out_f = fopen("bitmap.bmp", "w");
 

@@ -7,8 +7,8 @@
 #include <cstdint>
 #include <ctime>
 
-#include "SVector.h"
-#include "SMatrix.h"
+#include "SVectorExt.h"
+#include "SMatrixExt.h"
 
 //namespace sgl {
 
@@ -26,7 +26,7 @@ public:
 
     ~CCamera();
 
-    SMatrix get_matrix() const;
+    SMatrixExt get_matrix() const;
 
 private:
     SVector pos_;
@@ -68,17 +68,17 @@ CCamera::~CCamera()
     up_  = SVector();
 }
 
-SMatrix CCamera::get_matrix() const
+SMatrixExt CCamera::get_matrix() const
 {
-    SVector x_vec = vector_mul(up_, dir_);
-    SVector y_vec = vector_mul(dir_, x_vec);
+    SVector x_vec = mul(up_, dir_);
+    SVector y_vec = mul(dir_, x_vec);
     SVector z_vec = dir_;
-    SVector shift_vec = unitary(-pos_); 
+    SVector shift_vec = -pos_; 
 
-    SMatrix result = SMatrix();
+    SMatrixExt result = SMatrixExt();
 
-    result *= SMatrix(normal(x_vec), normal(y_vec), normal(z_vec));
-    result *= sgl_translate_mtx(shift_vec);
+    result *= sgl_new_basis_mtx(normal(x_vec), normal(y_vec), normal(z_vec));
+    result *= sgl_translate_mtx(extend(shift_vec));
 
     return result;
 }
@@ -88,13 +88,14 @@ int test_CCamera()
     CCamera cam = CCamera(SVector( 1.0f,  1.0f,  1.0f),
                           SVector(-1.0f, -1.0f, -1.0f));
 
-    SMatrix mtx = cam.get_matrix();
+    SMatrixExt mtx = cam.get_matrix();
     for (size_t y = 0; y < 4; ++y)
         printf("%.3f %.3f %.3f %.3f \n", 
                 mtx[y][0], mtx[y][1], mtx[y][2], mtx[y][3]);
 
     float coord = 1.0f - sqrtf(3.0f)/3.0f;
-    SVector vec = SVector(coord, coord, coord);
+    SVectorExt vec = SVectorExt(coord, coord, coord);
+
     printf("initial vec: %.3f %.3f %.3f %.3f \n", 
             vec.x, vec.y, vec.z, vec.w);
     

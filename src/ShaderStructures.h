@@ -15,59 +15,76 @@
 //namespace sgl {
 
 struct SVertex;
-struct SFragment;
+struct SFragmentExt;
 
-SFragment to_fragment(const SVertex& vertex);
-SFragment interpolate(const SFragment& beg, const SFragment& end, 
-                      float ratio)
+SFragmentExt to_fragment(const SVertex& vertex);
+SFragmentExt interpolate(const SFragmentExt& beg, const SFragmentExt& end, 
+                         float ratio);
 
 struct alignas(alignof(SVectorExt)) SVertex
 {
     SVectorExt point;
     SVector    normal;
-    SColor3    color;
+    SColor     color;
     float      tex_u;
     float      tex_v;
 };
 
-struct alignas(32) SFragment
+struct SFragment
 {
-    SFragment(const SVector& point_set, const SVector& color_set, 
-              float tex_u_set = 0.0f, float tex_v_set = 0.0f):
-        point(point_set), color(color_set), 
-        tex_u(tex_u_set), tex_v(tex_v_set)
+    SVector point; 
+    SColor  color;
+    float   tex_u;
+    float   tex_v;
+};
+
+struct alignas(32) SFragmentExt
+{
+    SFragmentExt():
+        as_ymm(_mm256_set1_ps(0.0f))
     {}
 
-    explicit SFragment(__m256 as_ymm_set):
+    SFragmentExt(const SVector& point_set, const SColor& color_set, 
+                 float tex_u_set = 0.0f, float tex_v_set = 0.0f):
+        frag{ .point=point_set, .color=color_set, 
+              .tex_u=tex_u_set, .tex_v=tex_v_set }
+    {}
+
+    explicit SFragmentExt(__m256 as_ymm_set):
         as_ymm(as_ymm_set) 
     {}
 
     union 
     {
-        struct
-        {
-            SVector point; 
-            SColor3 color;
-            float   tex_u;
-            float   tex_v;
-        }
-
+        SFragment frag;
         __m256 as_ymm;
-    }
+    };
 };
 
-SFragment to_fragment(const SVertex& vertex)
+SFragmentExt to_fragment(const SVertex& vertex)
 {
-    return SFragment(to_vector(vertex.point), vertex.color,
-                     vertex.tex_u, vertex.tex_v);
+    return SFragmentExt(narrow(vertex.point), vertex.color,
+                        vertex.tex_u, vertex.tex_v);
 }
 
-SFragment interpolate(const SFragment& beg, const SFragment& end, 
-                      float ratio)
+SFragmentExt interpolate(const SFragmentExt& beg, const SFragmentExt& end, 
+                         float ratio)
 {
-    return SFragment(_mm256_fnmadd_ps(_mm256_set1_ps(ratio),
-                                      _mm256_add_ps(beg.as_ymm, end.as_ymm),
-                                      beg.as_ymm);
+    //exists only on Intel Haswell and newer
+    if (false)
+    {
+//        return SFragmentExt(_mm256_fnmadd_ps(_mm256_set1_ps(ratio),
+//                                          _mm256_add_ps(beg.as_ymm, 
+//                                                        end.as_ymm),
+//                                          beg.as_ymm);
+    }
+    else
+    {
+        return SFragmentExt(_mm256_add_ps(beg.as_ymm, 
+                                       _mm256_mul_ps(_mm256_sub_ps(end.as_ymm,
+                                                                   beg.as_ymm),
+                                                     _mm256_set1_ps(ratio))));
+    }
 }
 
 //} //namespace sgl
