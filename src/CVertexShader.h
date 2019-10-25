@@ -9,8 +9,9 @@
 #include <ctime>
 
 //double including all tested files to check collisions
-#include "SVector.h"
-#include "SMatrix.h"
+#include "ShaderStructures.h"
+#include "SVectorExt.h"
+#include "SMatrixExt.h"
 #include "SColor.h" 
 
 //namespace sgl {
@@ -22,7 +23,7 @@ public:
     using out_t = SVertex;
 
     CVertexShader();
-    explicit CVertexShader(const SMatrix& mtx_set);
+    explicit CVertexShader(const SMatrixExt& mtx_set);
 
     CVertexShader             (const CVertexShader&);
     CVertexShader& operator = (const CVertexShader&);
@@ -35,14 +36,14 @@ public:
     out_t apply(const in_t& in) const;
     
 private:
-    SMatrix mtx_; 
+    SMatrixExt mtx_; 
 };
 
 CVertexShader::CVertexShader():
     mtx_()
 {}
 
-CVertexShader::CVertexShader(const SMatrix& mtx_set):
+CVertexShader::CVertexShader(const SMatrixExt& mtx_set):
     mtx_(mtx_set)
 {}
 
@@ -70,16 +71,16 @@ CVertexShader& CVertexShader::operator = (CVertexShader&& move_shader)
 
 CVertexShader::~CVertexShader()
 {
-    mtx_ = SMatrix();
+    mtx_ = SMatrixExt();
 }
 
 CVertexShader::out_t CVertexShader::apply(const in_t& in) const
 {
     out_t result = out_t();
 
-    result.point  = unitary(mtx_*in.point); 
-    result.normal = normal (mtx_*in.normal); 
-    result.color  =              in.color;
+    result.point  = mtx_*in.point; 
+    result.normal = normal(narrow(mtx_*extend(in.normal))); 
+    result.color  = in.color;
  
     return result;
 }

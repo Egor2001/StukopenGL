@@ -184,27 +184,21 @@ int test_CRasterizer()
     CRasterizer rasterizer = CRasterizer(float(CBuffer::DIM_W),
                                          float(CBuffer::DIM_H));
 
-    const size_t LINE_CNT = 0x100;
-    for (size_t i = 0; i < LINE_CNT; ++i)
+    const size_t FACE_CNT = 0x10;
+    SVertex vert_arr[3];
+    for (size_t i = 0; i < FACE_CNT; ++i)
     {
-        SVertex cur_beg_v = {};
-        SVertex cur_end_v = {};       
+        for (size_t i = 0; i < 3; ++i)
+        {
+            vert_arr[i].point.x = float(rand()%CBuffer::DIM_W);
+            vert_arr[i].point.y = float(rand()%CBuffer::DIM_H);
 
-        cur_beg_v.point.x = float(rand()%CBuffer::DIM_W);
-        cur_beg_v.point.y = float(rand()%CBuffer::DIM_H);
+            vert_arr[i].color = SColor(float(rand()&0xFF)/255.0f,
+                                       float(rand()&0xFF)/255.0f,
+                                       float(rand()&0xFF)/255.0f);
+        }
 
-        cur_end_v.point.x = float(rand()%CBuffer::DIM_W);
-        cur_end_v.point.y = float(rand()%CBuffer::DIM_H);
-       
-        cur_beg_v.color = SColor(float(rand()&0xFF)/255.0f,
-                                 float(rand()&0xFF)/255.0f,
-                                 float(rand()&0xFF)/255.0f);
-
-        cur_end_v.color = SColor(float(rand()&0xFF)/255.0f,
-                                 float(rand()&0xFF)/255.0f,
-                                 float(rand()&0xFF)/255.0f);
-
-        rasterizer.rast_line(cur_beg_v, cur_end_v);
+        rasterizer.fill_face(vert_arr);
     } 
 /*
     printf("rasterizer.frag_vec().size() = %lu \n", 

@@ -9,8 +9,8 @@
 #include <immintrin.h>
 
 //vertex
-#include "SVector.h"
-#include "SColor.h"
+#include "SVectorExt.h"
+#include "SColorExt.h"
 
 //namespace sgl {
 
@@ -63,7 +63,8 @@ struct alignas(32) SFragmentExt
 
 SFragmentExt to_fragment(const SVertex& vertex)
 {
-    return SFragmentExt(narrow(vertex.point), vertex.color,
+    return SFragmentExt(narrow(vertex.point), 
+                        vertex.color,
                         vertex.tex_u, vertex.tex_v);
 }
 

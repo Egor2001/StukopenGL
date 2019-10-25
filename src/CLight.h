@@ -72,6 +72,12 @@ SVertex CLight::apply(const SVertex& vertex) const
     SVertex result = vertex;
 
     SVector dir_to = ::normal(narrow(vertex.point - pos_));
+
+    if (fabs(pos_.w) < FLT_EPSILON)
+        dir_to = ::normal(-SVector(pos_.x, pos_.y, pos_.z));
+    else
+        dir_to = ::normal(narrow(vertex.point - pos_)); 
+
     SVector normal  = vertex.normal;
 
     float scale = fmax(0.0f, dot(dir_to, normal));

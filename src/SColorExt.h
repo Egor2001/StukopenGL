@@ -5,6 +5,7 @@
 
 //color
 #include <cfloat>
+#include "SColor.h"
 
 //namespace sgl {
 
@@ -15,10 +16,13 @@ SColorExt interpolate(const SColorExt& beg_c, const SColorExt& end_c,
 SColorExt alpha_blend(const SColorExt& beg_c, const SColorExt& end_c);
 SColorExt operator * (const SColorExt& color, float scale);
 
+SColorExt extend(const SColor&    color);
+SColor    narrow(const SColorExt& color);
+
 struct SColorExt
 {
     SColorExt():
-        r(0.0f), g(0.0f), b(0.0f), a(1.0f)
+        as_xmm(_mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f))
     {} 
 
     //TODO: use clamp
@@ -28,6 +32,10 @@ struct SColorExt
         b(fmax(0.0f, fmin(b_set, 1.0f))), 
         a(fmax(0.0f, fmin(a_set, 1.0f)))
     {}
+
+    SColorExt(__m128 as_xmm_set):
+        as_xmm(as_xmm_set)
+    {} 
 
     union
     {
@@ -44,7 +52,7 @@ SColorExt interpolate(const SColorExt& beg_c, const SColorExt& end_c,
     result.as_xmm = _mm_add_ps(beg_c.as_xmm, 
                                _mm_mul_ps(_mm_sub_ps(end_c.as_xmm,
                                                      beg_c.as_xmm),
-                                          _mm_set1_ps(ratio));
+                                          _mm_set1_ps(ratio)));
 
     return result;
 }
@@ -73,6 +81,16 @@ SColorExt operator * (const SColorExt& color, float scale)
     result = interpolate(SColorExt(), color, scale); 
 
     return result;
+}
+
+SColorExt extend(const SColor& color)
+{
+    return SColorExt(color.r, color.g, color.b, 1.0f);
+}
+
+SColor narrow(const SColorExt& color)
+{
+    return SColor(color.r, color.g, color.b)*color.a;
 }
 
 //} //namespace sgl 
