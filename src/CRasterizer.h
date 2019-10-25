@@ -128,21 +128,20 @@ void CRasterizer::fill_face(const SVertex v_arr[3])
     if (mid_f.frag.point.y < end_f.frag.point.y) std::swap(mid_f, end_f);
     if (beg_f.frag.point.y < mid_f.frag.point.y) std::swap(beg_f, mid_f);
 
-    if (fabs(beg_f.frag.point.y - end_f.frag.point.y) < FLT_EPSILON)
+    if (fabs(beg_f.frag.point.y - end_f.frag.point.y) < 1.0f)
     {
         fill_xseq(beg_f, mid_f);
         fill_xseq(end_f, mid_f);
     }
     else
     {
-        float ratio = (beg_f.frag.point.y - mid_f.frag.point.y) / 
-                      (beg_f.frag.point.y - end_f.frag.point.y);
+        float ratio = roundf(beg_f.frag.point.y - mid_f.frag.point.y) / 
+                            (beg_f.frag.point.y - end_f.frag.point.y);
 
         SFragmentExt div_f = ::interpolate(beg_f, end_f, ratio);
 
-        fill_half(div_f, mid_f, beg_f);
-        fill_half(div_f, mid_f, end_f);
-        fill_xseq(div_f, mid_f);
+        fill_half(mid_f, div_f, beg_f);
+        fill_half(mid_f, div_f, end_f);
     }
 }
 
@@ -150,12 +149,15 @@ void CRasterizer::fill_half(const SFragmentExt& beg_f,
                             const SFragmentExt& end_f,
                             const SFragmentExt& top_f)
 { //TODO: check beg & end Y coordinate equality requirement
-    size_t step_cnt = size_t(roundf(fabs(top_f.frag.point.y - 
-                                         beg_f.frag.point.y)));
+    float length = fabs(top_f.frag.point.y - beg_f.frag.point.y);
+    size_t step_cnt = size_t(roundf(length));
 
-    for (size_t cur_step = 0; cur_step < step_cnt; ++cur_step)
+    if (step_cnt == 0)
+        return;
+
+    for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
     {
-        float ratio = (float(cur_step) / float(step_cnt));
+        float ratio = (float(cur_step) / length);
         
         fill_xseq(::interpolate(top_f, beg_f, ratio), 
                   ::interpolate(top_f, end_f, ratio));
@@ -165,12 +167,26 @@ void CRasterizer::fill_half(const SFragmentExt& beg_f,
 void CRasterizer::fill_xseq(const SFragmentExt& beg_f, 
                             const SFragmentExt& end_f)
 {
-    size_t step_cnt = size_t(roundf(fabs(beg_f.frag.point.x - 
-                                         end_f.frag.point.x)));
+/*
+    if (beg_f.frag.point.y < 0.0f || beg_f.frag.point.y > max_y_ ||
+        end_f.frag.point.y < 0.0f || end_f.frag.point.y > max_y_)
+        return;
+
+    SFragmentExt new_beg_f = beg_f;
+    SFragmentExt new_end_f = end_f;
+
+    new_beg_f.frag.point.x = fmax(0.0f, fmin(beg_f.frag.point.x, max_x_));
+    new_end_f.frag.point.x = fmax(0.0f, fmin(end_f.frag.point.x, max_x_));
+*/
+    float length = fabs(beg_f.frag.point.x - end_f.frag.point.x);
+    size_t step_cnt = size_t(roundf(length));
+
+    if (step_cnt == 0)
+        return;
 
     for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
     {
-        float ratio = (float(cur_step) / float(step_cnt));
+        float ratio = (float(cur_step) / length);
         frag_vec_.push_back(::interpolate(beg_f, end_f, ratio).frag);
     }
 }

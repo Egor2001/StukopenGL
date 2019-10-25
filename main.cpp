@@ -17,74 +17,7 @@
 #include "src/CCamera.h"
 #include "src/CVertexShader.h"
 #include "src/CLight.h"
-
-class CPerspective
-{
-public:
-    CPerspective(float near_set, float far_set);
-
-    CPerspective             (const CPerspective&);
-    CPerspective& operator = (const CPerspective&);
-    CPerspective             (CPerspective&&);
-    CPerspective& operator = (CPerspective&&);
-
-    ~CPerspective();
-
-    SMatrixExt get_matrix() const;
-
-private:
-    float near_;
-    float far_;
-};
-
-CPerspective::CPerspective(float near_set, float far_set):
-    near_(near_set),
-    far_ (far_set)
-{}
-
-CPerspective::CPerspective(const CPerspective& copy_perspective):
-    near_(copy_perspective.near_),
-    far_ (copy_perspective.far_)
-{}
-
-CPerspective& CPerspective::operator = (const CPerspective& copy_perspective)
-{
-    near_ = copy_perspective.near_;
-    far_  = copy_perspective.far_;
-
-    return *this;
-}
-
-CPerspective::CPerspective(CPerspective&& move_perspective):
-    near_(std::move(move_perspective.near_)),
-    far_ (std::move(move_perspective.far_))
-{}
-
-CPerspective& CPerspective::operator = (CPerspective&& move_perspective)
-{
-    std::swap(near_, move_perspective.near_);
-    std::swap(far_,  move_perspective.far_);
-
-    return *this;
-}
-
-CPerspective::~CPerspective()
-{
-    near_ = far_ = 0.0f;
-}
-
-SMatrixExt CPerspective::get_matrix() const
-{
-    float mat33 = -(far_ + near_)/(far_ - near_);
-    float mat34 = -(2*far_*near_)/(far_ - near_);
-
-    SMatrixExt result = SMatrixExt(SVectorExt(near_, 0.0f, 0.0f, 0.0f),
-                                   SVectorExt(0.0f, near_, 0.0f, 0.0f),
-                                   SVectorExt(0.0f, 0.0f, mat33, mat34),
-                                   SVectorExt(0.0f, 0.0f, -1.0f, 0.0f));
-
-    return result;
-}
+#include "src/CPerspective.h"
 
 int main(int argc, char* argv[])
 {
@@ -112,7 +45,7 @@ int main(int argc, char* argv[])
     CCamera cam   = CCamera(cam_pos, cam_dir);
     CLight  light = CLight (SVectorExt(5.0f, 5.0f, -5.0f, 1.0f), 
                             SColor(1.0f, 1.0f, 1.0f));
-    CPerspective proj = CPerspective(0.1f, 10.0f);
+    CPerspective proj = CPerspective(1.0f, 2.5f);
 
     float x_scale =  0.5f*float(CBuffer::DIM_H);
     float y_scale = -0.5f*float(CBuffer::DIM_H);
@@ -132,7 +65,7 @@ int main(int argc, char* argv[])
     CRasterizer rasterizer = CRasterizer(float(CBuffer::DIM_W), 
                                          float(CBuffer::DIM_H));
 
-    auto seed = time(NULL);
+//    auto seed = time(NULL);
     buf.clear();
     rasterizer.clear();
  
@@ -156,7 +89,7 @@ int main(int argc, char* argv[])
                 vert_arr[i] = obj.vertex_buf()[face.arr[i]]; 
                 vert_arr[i].color = SColor(0.5f, 0.5f, 0.5f);
                 vert_arr[i] = light.apply(vertex_shader.apply(vert_arr[i]));
-                vert_arr[i].point = buf_mtx*vert_arr[i].point;
+                vert_arr[i].point = buf_mtx*proj_mtx*vert_arr[i].point;
             }
 
             rasterizer.fill_face(vert_arr);

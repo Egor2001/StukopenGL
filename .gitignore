@@ -7,6 +7,9 @@ bin/
 #output
 output/
 
+#test
+test/
+
 #tags
 tags
 *.tags

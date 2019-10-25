@@ -7,6 +7,7 @@
 #include <cstdint>
 
 //buffer
+#include <cstring>
 #include <wchar.h>
 #include <cfloat>
 #include <vector>
@@ -83,8 +84,14 @@ public:
     {
         SBufColor color_val = SBufColor();
         float     depth_val = FLT_MAX;
-        wmemset((wchar_t*)color_buf_, *((wchar_t*)&color_val), DIM_W*DIM_H);
-        wmemset((wchar_t*)depth_buf_, *((wchar_t*)&depth_val), DIM_W*DIM_H);
+
+        wchar_t color_wchar = 0;
+        wchar_t depth_wchar = 0;
+        memcpy(&color_wchar, &color_val, sizeof(wchar_t));
+        memcpy(&depth_wchar, &depth_val, sizeof(wchar_t));
+
+        wmemset((wchar_t*)color_buf_, color_wchar, DIM_W*DIM_H);
+        wmemset((wchar_t*)depth_buf_, depth_wchar, DIM_W*DIM_H);
     }
 
 private:
