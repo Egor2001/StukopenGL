@@ -112,13 +112,15 @@ SMatrixExt& SMatrixExt::operator -= (const SMatrixExt& sub)
 SMatrixExt& SMatrixExt::operator *= (const SMatrixExt& mul)
 {
     SMatrixExt before = *this;
+    
     SMatrixExt transp = transposed(mul);
     
     for (size_t y = 0; y < 4; ++y)
     for (size_t x = 0; x < 4; ++x)
-        as_xmm_vec[y][x] = _mm_cvtss_f32(_mm_dp_ps(before.as_xmm_vec[y], 
-                                                   transp.as_xmm_vec[x], 
-                                                   0b11111111));
+        mtx[y][x] = _mm_cvtss_f32(_mm_dp_ps(before.as_xmm_vec[y], 
+                                            transp.as_xmm_vec[x], 
+                                            0b11111111));
+    
 
     return *this;
 }

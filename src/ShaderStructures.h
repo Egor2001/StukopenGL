@@ -75,9 +75,9 @@ SFragmentExt interpolate(const SFragmentExt& beg, const SFragmentExt& end,
     if (false)
     {
 //        return SFragmentExt(_mm256_fnmadd_ps(_mm256_set1_ps(ratio),
-//                                          _mm256_add_ps(beg.as_ymm, 
-//                                                        end.as_ymm),
-//                                          beg.as_ymm);
+//                                             _mm256_add_ps(beg.as_ymm, 
+//                                                           end.as_ymm),
+//                                             beg.as_ymm);
     }
     else
     {

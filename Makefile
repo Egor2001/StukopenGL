@@ -6,7 +6,7 @@ SRCDIR=src
 SOURCES=main.cpp
 
 CC=g++
-CFLAGS= -c -Wall -mavx -Ofast 
+CFLAGS= -c -Wall -mavx -ggdb -Ofast 
 EXECUTABLE=$(BINDIR)/main
 
 LD=$(CC)
