@@ -1,9 +1,17 @@
 #ifndef SGL_CTHREADPOOL_H
 #define SGL_CTHREADPOOL_H
 
+//general
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <vector>
+#include <queue>
+#include <functional>
+
+//testing
+#include <cstdio>
+#include <cstdint>
 
 //namespace sgl {
 
@@ -17,19 +25,17 @@ public:
 
     CThreadPool             (const CThreadPool&) = delete;
     CThreadPool& operator = (const CThreadPool&) = delete;
-    CThreadPool             (CThreadPool&&);
-    CThreadPool& operator = (CThreadPool&&);
+    CThreadPool             (CThreadPool&&) = delete;
+    CThreadPool& operator = (CThreadPool&&) = delete;
 
     ~CThreadPool();
 
     void push_task(const SFunctor& task);
     void push_task(SFunctor&& task);
 
-    //TODO: consider to implement full join inside the destructor
-    void full_join();
-
 private:
-    //TODO: use unique_lock on it (read about locks and others on habr)
+    bool terminate_flag_; 
+
     std::mutex              mutex_;
     std::condition_variable cond_var_;
 
@@ -38,22 +44,32 @@ private:
 };
     
 CThreadPool::CThreadPool(size_t thread_cnt):
+    terminate_flag_(false),
     mutex_(),
     cond_var_(),
-    thread_vec_(thread_cnt),
+    thread_vec_(),
     func_queue_()
 {
-    auto thread_func = [this]//() -> void
+    auto thread_func = [this]/*() -> void*/
     {
+        //will cause bad_call exception in case of not being initialized
         SFunctor work_func;
 
-        //TODO: to implement the condition to stop working
+        //quit loop via break on terminate flag inside a critical section
         while (true)
         {
+            //anonymous block is used for RAII within unique_lock
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                cond_var_.wait(lock, [this]/*() -> bool*/
-                                     { return !func_queue_.empty(); });
+                cond_var_.wait(lock, [this]() -> bool
+                { 
+                    return !func_queue_.empty() ||
+                            terminate_flag_; 
+                });
+
+                //quit the loop on terminate flag after processing all tasks 
+                if (terminate_flag_ && func_queue_.empty())
+                    break;
 
                 work_func = std::move(func_queue_.front());
                 func_queue_.pop();
@@ -62,53 +78,67 @@ CThreadPool::CThreadPool(size_t thread_cnt):
             work_func();
         }
     };
-    
-    for (auto& thrd : thread_vec_)
-    {
-        thrd = std::thread(std::move(thread_func));
-        //TODO: consider another way to keep threads on 
-        thrd.detach();
-    }
-}
 
-CThreadPool::CThreadPool(CThreadPool&& move_pool):
-    mutex_     (std::move(move_pool.mutex_)),
-    cond_var_  (std::move(move_pool.cond_var_)),
-    thread_vec_(std::move(move_pool.thread_vec_)),
-    func_queue_(std::move(move_pool.func_queue_))
-{}
-
-CThreadPool& CThreadPool::operator = (CThreadPool&& move_pool)
-{
-    std::swap(mutex_,      move_pool.mutex_);
-    std::swap(cond_var_,   move_pool.cond_var_);
-    std::swap(thread_vec_, move_pool.thread_vec_);
-    std::swap(func_queue_, move_pool.func_queue_);
-
-    return *this;
+    thread_vec_.reserve(thread_cnt);
+    for (size_t i = 0; i < thread_cnt; ++i)
+        thread_vec_.emplace_back(std::move(thread_func));
 }
 
 CThreadPool::~CThreadPool()
 {
-    //TODO: consider not to wait in destructor
-    //full_join();
-    thread_vec_.clear();
+    //anonymous block is used for RAII within unique_lock
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        terminate_flag_ = true;
+    }
+
+    cond_var_.notify_all();
+
+    for (auto& thrd : thread_vec_)
+        thrd.join();
 }
 
 void CThreadPool::push_task(const SFunctor& task)
 {
-    func_queue_.push_back_(task);
+    //anonymous block is used for RAII within unique_lock
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        func_queue_.push(task);
+    }
+
+    cond_var_.notify_one();
 }
 
 void CThreadPool::push_task(SFunctor&& task)
 {
-    func_queue_.push_back_(std::move(task));
+    //anonymous block is used for RAII within unique_lock
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        func_queue_.push(std::move(task));
+    }
+
+    cond_var_.notify_one();
 }
 
-void CThreadPool::full_join()
+int test_CThreadPool()
 {
-    std::unique_lock<std::mutex> lock(mutex_);
-    cond_var.wait(lock, [this]/*() -> bool*/{ return func_queue_.empty(); });
+    const size_t ARR_SIZE = 32;
+    const size_t POOL_SIZE = 8;
+
+    uint8_t var[ARR_SIZE] = {};
+
+    //anonymous block for RAII within thread pool
+    {
+        CThreadPool thread_pool(POOL_SIZE);
+
+        for (size_t i = 0; i < ARR_SIZE; ++i)
+            thread_pool.push_task([&var, i](){ ++var[i]; });
+    }
+    
+    for (size_t i = 0; i < ARR_SIZE; ++i)
+        printf("%u ", var[i]);
+
+    return 0;
 }
 
 //} //namespace sgl
