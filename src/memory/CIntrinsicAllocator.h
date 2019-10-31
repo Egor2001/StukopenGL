@@ -46,11 +46,6 @@ CIntrinsicAllocator<T>::deallocate(value_type* ptr, size_t n)
 
 int test_CIntrinsicAllocator()
 {
-    return 0;
-}
-
-int test_CIntrinsicAllocator()
-{
     const size_t VEC_SIZE = 255;
     CIntrinsicVector<__m256> vec;
     for (size_t i = 0; i < VEC_SIZE; ++i)
@@ -63,7 +58,7 @@ int test_CIntrinsicAllocator()
     printf("allocated at: %p\n", vec.data());
 
     for (size_t i = 0; i < 8; ++i)
-        printf("acc[%llu] = %.3f ", i, acc[i]);
+        printf("acc[%lu] = %.3f ", i, acc[i]);
 
     printf("\n");
 

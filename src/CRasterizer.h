@@ -15,6 +15,7 @@
 #include "SColor.h" 
 #include "CScreen.h"
 #include "CBuffer.h"
+#include "memory/CIntrinsicAllocator.h"
 
 //namespace sgl {
 
@@ -31,7 +32,7 @@ public:
 
     ~CRasterizer();
 
-    const std::vector<SFragment>& frag_vec() const noexcept
+    const CIntrinsicVector<SFragment>& frag_vec() const noexcept
     {
         return frag_vec_;
     }
@@ -56,7 +57,7 @@ public:
     void fill_xseq(const SFragmentExt& beg_f, const SFragmentExt& end_f);
 
 private:
-    std::vector<SFragment> frag_vec_;
+    CIntrinsicVector<SFragment> frag_vec_;
 
     float max_x_;
     float max_y_;

@@ -12,6 +12,7 @@
 #include <cfloat>
 #include <vector>
 #include "ShaderStructures.h"
+#include "memory/CIntrinsicAllocator.h"
 
 //test
 #include <random>
@@ -55,7 +56,7 @@ public:
         return color_buf_;
     }
 
-    void render(const std::vector<SFragment>& fragment_vec)
+    void render(const CIntrinsicVector<SFragment>& fragment_vec)
     {
         for (const auto& fragment : fragment_vec)
             render_frag(fragment);
@@ -144,7 +145,7 @@ int test_CBuffer()
 
     const size_t SIZE = buf.size();
 
-    auto fragment_vec = std::vector<SFragment>(SIZE);
+    auto fragment_vec = CIntrinsicVector<SFragment>(SIZE);
 
     for (size_t i = 0; i < SIZE; ++i)
     {
