@@ -193,9 +193,9 @@ SMatrixExt sgl_new_basis_mtx(const SVector& new_x,
 int test_SMatrixExt()
 {
     float ang = float(M_PI / 12.0f); 
-    SVector vec_x = SVector(cosf(ang), -sinf(ang), 0.0f);
-    SVector vec_y = SVector(sinf(ang),  cosf(ang), 0.0f);
-    SVector vec_z = SVector(0.0f,       0.0f,      1.0f);
+    SVector vec_x = SVector{ cosf(ang), -sinf(ang), 0.0f };
+    SVector vec_y = SVector{ sinf(ang),  cosf(ang), 0.0f };
+    SVector vec_z = SVector{ 0.0f,       0.0f,      1.0f };
 
     SMatrixExt mtx = sgl_new_basis_mtx(vec_x, vec_y, vec_z); 
 

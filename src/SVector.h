@@ -32,9 +32,8 @@ SVector normal(const SVector&);
 struct SVector
 {
 public:
-    SVector();
-    SVector(float x_set, float y_set, float z_set);
-
+//    SVector();
+//    SVector(float x_set, float y_set, float z_set);
 
     SVector& operator += (const SVector& add); 
     SVector& operator -= (const SVector& sub); 
@@ -49,13 +48,13 @@ public:
     };
 };
 
-SVector::SVector():
-    x(0.0f), y(0.0f), z(0.0f)
-{}
+//SVector::SVector():
+//    x(0.0f), y(0.0f), z(0.0f)
+//{}
 
-SVector::SVector(float x_set, float y_set, float z_set):
-    x(x_set), y(y_set), z(z_set)
-{}
+//SVector::SVector(float x_set, float y_set, float z_set):
+//    x(x_set), y(y_set), z(z_set)
+//{}
 
 SVector& SVector::operator += (const SVector& add) 
 {
@@ -92,7 +91,7 @@ SVector& SVector::normalize()
 
 SVector operator - (const SVector& vec)
 {
-    return SVector(-vec.x, -vec.y, -vec.z);
+    return SVector{ -vec.x, -vec.y, -vec.z };
 }
 
 SVector operator + (const SVector& lhs, const SVector& rhs)
@@ -122,7 +121,7 @@ float dot(const SVector& lhs, const SVector& rhs)
 
 SVector mul(const SVector& lhs, const SVector& rhs)
 {
-    SVector result;
+    SVector result = SVector{};
 
     result.x = rhs.y*lhs.z - rhs.z*lhs.y;
     result.y = rhs.z*lhs.x - rhs.x*lhs.z;
@@ -147,8 +146,8 @@ SVector normal(const SVector& vec)
 
 int test_SVector()
 {
-    SVector vec1 = SVector(0.5f, 6.7f, -3.4f);
-    SVector vec2 = SVector(-4.3f, 0.1f, 2.6f);
+    SVector vec1 = SVector{0.5f, 6.7f, -3.4f};
+    SVector vec2 = SVector{-4.3f, 0.1f, 2.6f};
 
     SVector add = vec1 + vec2;
     SVector sub = vec1 - vec2;

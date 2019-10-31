@@ -175,9 +175,9 @@ SVector narrow(const SVectorExt& extended)
 {
     float scale = 1.0f/extended.w;
 
-    SVector result = SVector(extended.x, 
-                             extended.y, 
-                             extended.z)*scale;
+    SVector result = SVector{ extended.x, 
+                              extended.y, 
+                              extended.z }*scale;
 
     return result;
 }

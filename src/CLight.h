@@ -14,7 +14,7 @@ class CLight
 {
 public:
     explicit CLight(const SVectorExt& pos_set, 
-                    const SColor& = SColor(1.0f, 1.0f, 1.0f));
+                    const SColor& = SColor{ 1.0f, 1.0f, 1.0f });
 
     CLight             (const CLight&&);
     CLight& operator = (const CLight&&);
@@ -63,7 +63,7 @@ CLight& CLight::operator = (CLight&& move_light)
 
 CLight::~CLight()
 {
-    color_ = SColor(0.0f, 0.0f, 0.0f);
+    color_ = SColor{ 0.0f, 0.0f, 0.0f };
     pos_   = SVectorExt();
 }
     
@@ -74,11 +74,11 @@ SVertex CLight::apply(const SVertex& vertex) const
     SVector dir_to = ::normal(narrow(vertex.point - pos_));
 
     if (fabs(pos_.w) < FLT_EPSILON)
-        dir_to = ::normal(-SVector(pos_.x, pos_.y, pos_.z));
+        dir_to = ::normal(-SVector{ pos_.x, pos_.y, pos_.z });
     else
         dir_to = ::normal(narrow(vertex.point - pos_)); 
 
-    SVector normal  = vertex.normal;
+    SVector normal = vertex.normal;
 
     float scale = fmax(0.0f, dot(dir_to, normal));
 

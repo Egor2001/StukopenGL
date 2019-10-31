@@ -17,7 +17,7 @@ class CCamera
 public:
     CCamera();
     CCamera(const SVector& pos_set, const SVector& dir_set, 
-            const SVector& up_set = SVector(0.0f, 1.0f, 0.0f));
+            const SVector& up_set = SVector{ 0.0f, 1.0f, 0.0f });
 
     CCamera             (const CCamera&) = delete;
     CCamera& operator = (const CCamera&) = delete;
@@ -35,8 +35,8 @@ private:
 };
 
 CCamera::CCamera():
-    pos_(), dir_(),
-    up_(0.0f, 1.0f, 0.0f)
+    pos_{}, dir_{},
+    up_{ 0.0f, 1.0f, 0.0f }
 {}
 
 CCamera::CCamera(const SVector& pos_set, const SVector& dir_set, 
@@ -63,9 +63,9 @@ CCamera& CCamera::operator = (CCamera&& move_camera)
 
 CCamera::~CCamera()
 {
-    pos_ = SVector();
-    dir_ = SVector();
-    up_  = SVector();
+    pos_ = SVector{};
+    dir_ = SVector{};
+    up_  = SVector{};
 }
 
 SMatrixExt CCamera::get_matrix() const
@@ -85,8 +85,8 @@ SMatrixExt CCamera::get_matrix() const
 
 int test_CCamera()
 {
-    CCamera cam = CCamera(SVector( 1.0f,  1.0f,  1.0f),
-                          SVector(-1.0f, -1.0f, -1.0f));
+    CCamera cam = CCamera(SVector{  1.0f,  1.0f,  1.0f },
+                          SVector{ -1.0f, -1.0f, -1.0f });
 
     SMatrixExt mtx = cam.get_matrix();
     for (size_t y = 0; y < 4; ++y)

@@ -46,19 +46,28 @@ CIntrinsicAllocator<T>::deallocate(value_type* ptr, size_t n)
 
 int test_CIntrinsicAllocator()
 {
-    const size_t VEC_SIZE = 255;
-    CIntrinsicVector<__m256> vec;
-    for (size_t i = 0; i < VEC_SIZE; ++i)
-        vec.push_back(_mm256_set1_ps(1.0f));
+    struct SCombinedStruct
+    {
+        union
+        {
+            float vec[4];
+            __m256 as_ymm;
+        };
+    };
 
-    __m256 acc = _mm256_set1_ps(0.0f);
-    for (auto& ymm : vec)
-        acc = _mm256_add_ps(acc, ymm);
+    const size_t VEC_SIZE = 255;
+    CIntrinsicVector<SCombinedStruct> vec;
+    for (size_t i = 0; i < VEC_SIZE; ++i)
+        vec.push_back(SCombinedStruct{ .as_ymm = _mm256_set1_ps(1.0f) });
+
+    SCombinedStruct acc = { .as_ymm = _mm256_set1_ps(0.0f) };
+    for (auto& elem : vec)
+        acc.as_ymm = _mm256_add_ps(acc.as_ymm, elem.as_ymm);
 
     printf("allocated at: %p\n", vec.data());
 
     for (size_t i = 0; i < 8; ++i)
-        printf("acc[%lu] = %.3f ", i, acc[i]);
+        printf("acc[%lu] = %.3f ", i, acc.as_ymm[i]);
 
     printf("\n");
 

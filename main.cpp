@@ -39,12 +39,12 @@ int main(int argc, char* argv[])
     obj.parse_from(obj_file);
 //    obj.write_to(stdout);
 
-    SVector cam_pos = SVector(0.0f, 1.0f, 2.0f);
-    SVector cam_dir = SVector(0.0f, 0.0f, -2.0f);
+    SVector cam_pos = SVector{ 0.0f, 1.0f, 2.0f };
+    SVector cam_dir = SVector{ 0.0f, 0.0f, -2.0f };
 
     CCamera cam   = CCamera(cam_pos, cam_dir);
     CLight  light = CLight (SVectorExt(5.0f, 5.0f, -5.0f, 1.0f), 
-                            SColor(1.0f, 1.0f, 1.0f));
+                            SColor{ 1.0f, 1.0f, 1.0f });
     CPerspective proj = CPerspective(1.0f, 2.5f);
 
     float x_scale =  0.5f*float(CBuffer::DIM_H);
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
             for (size_t i = 0; i < 3; ++i)
             {
                 vert_arr[i] = obj.vertex_buf()[face.arr[i]]; 
-                vert_arr[i].color = SColor(0.5f, 0.5f, 0.5f);
+                vert_arr[i].color = SColor{ 0.5f, 0.5f, 0.5f };
                 vert_arr[i] = light.apply(vertex_shader.apply(vert_arr[i]));
                 vert_arr[i].point = buf_mtx*proj_mtx*vert_arr[i].point;
             }

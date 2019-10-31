@@ -51,10 +51,10 @@ public:
 
     void fill_face(const SVertex v_arr[3]);
 
-    void fill_half(const SFragmentExt& beg_f, const SFragmentExt& end_f,
-                   const SFragmentExt& top_f);
+    void fill_half(const SFragment& beg_f, const SFragment& end_f,
+                   const SFragment& top_f);
 
-    void fill_xseq(const SFragmentExt& beg_f, const SFragmentExt& end_f);
+    void fill_xseq(const SFragment& beg_f, const SFragment& end_f);
 
 private:
     CIntrinsicVector<SFragment> frag_vec_;
@@ -94,18 +94,18 @@ CRasterizer::~CRasterizer()
 void CRasterizer::rast_line(const SVertex& beg_v, 
                             const SVertex& end_v)
 {
-    SFragmentExt beg_f = ::to_fragment(beg_v);
-    SFragmentExt end_f = ::to_fragment(end_v);
+    SFragment beg_f = ::to_fragment(beg_v);
+    SFragment end_f = ::to_fragment(end_v);
 
-    size_t step_cnt = std::max(size_t(fabs(end_f.frag.point.x - 
-                                           beg_f.frag.point.x)),
-                               size_t(fabs(end_f.frag.point.y - 
-                                           beg_f.frag.point.y)));
+    size_t step_cnt = std::max(size_t(fabs(end_f.point.x - 
+                                           beg_f.point.x)),
+                               size_t(fabs(end_f.point.y - 
+                                           beg_f.point.y)));
 
     for (size_t cur_step = 0; cur_step < step_cnt; ++cur_step)
     {
         float ratio = (float(cur_step) / float(step_cnt));
-        frag_vec_.push_back(::interpolate(beg_f, end_f, ratio).frag);
+        frag_vec_.push_back(::interpolate(beg_f, end_f, ratio));
     }
 }
 
@@ -121,36 +121,36 @@ void CRasterizer::rast_face(const SVertex& beg_v,
 
 void CRasterizer::fill_face(const SVertex v_arr[3])
 {
-    SFragmentExt beg_f = ::to_fragment(v_arr[0]);
-    SFragmentExt mid_f = ::to_fragment(v_arr[1]);
-    SFragmentExt end_f = ::to_fragment(v_arr[2]);
+    SFragment beg_f = ::to_fragment(v_arr[0]);
+    SFragment mid_f = ::to_fragment(v_arr[1]);
+    SFragment end_f = ::to_fragment(v_arr[2]);
 
-    if (beg_f.frag.point.y < mid_f.frag.point.y) std::swap(beg_f, mid_f);
-    if (mid_f.frag.point.y < end_f.frag.point.y) std::swap(mid_f, end_f);
-    if (beg_f.frag.point.y < mid_f.frag.point.y) std::swap(beg_f, mid_f);
+    if (beg_f.point.y < mid_f.point.y) std::swap(beg_f, mid_f);
+    if (mid_f.point.y < end_f.point.y) std::swap(mid_f, end_f);
+    if (beg_f.point.y < mid_f.point.y) std::swap(beg_f, mid_f);
 
-    if (fabs(beg_f.frag.point.y - end_f.frag.point.y) < 1.0f)
+    if (fabs(beg_f.point.y - end_f.point.y) < 1.0f)
     {
         fill_xseq(beg_f, mid_f);
         fill_xseq(end_f, mid_f);
     }
     else
     {
-        float ratio = roundf(beg_f.frag.point.y - mid_f.frag.point.y) / 
-                            (beg_f.frag.point.y - end_f.frag.point.y);
+        float ratio = roundf(beg_f.point.y - mid_f.point.y) / 
+                            (beg_f.point.y - end_f.point.y);
 
-        SFragmentExt div_f = ::interpolate(beg_f, end_f, ratio);
+        SFragment div_f = ::interpolate(beg_f, end_f, ratio);
 
         fill_half(mid_f, div_f, beg_f);
         fill_half(mid_f, div_f, end_f);
     }
 }
 
-void CRasterizer::fill_half(const SFragmentExt& beg_f, 
-                            const SFragmentExt& end_f,
-                            const SFragmentExt& top_f)
+void CRasterizer::fill_half(const SFragment& beg_f, 
+                            const SFragment& end_f,
+                            const SFragment& top_f)
 { //TODO: check beg & end Y coordinate equality requirement
-    float length = fabs(top_f.frag.point.y - beg_f.frag.point.y);
+    float length = fabs(top_f.point.y - beg_f.point.y);
     size_t step_cnt = size_t(roundf(length));
 
     if (step_cnt == 0)
@@ -165,21 +165,21 @@ void CRasterizer::fill_half(const SFragmentExt& beg_f,
     }
 }
 
-void CRasterizer::fill_xseq(const SFragmentExt& beg_f, 
-                            const SFragmentExt& end_f)
+void CRasterizer::fill_xseq(const SFragment& beg_f, 
+                            const SFragment& end_f)
 {
 /*
-    if (beg_f.frag.point.y < 0.0f || beg_f.frag.point.y > max_y_ ||
-        end_f.frag.point.y < 0.0f || end_f.frag.point.y > max_y_)
+    if (beg_f.point.y < 0.0f || beg_f.point.y > max_y_ ||
+        end_f.point.y < 0.0f || end_f.point.y > max_y_)
         return;
 
-    SFragmentExt new_beg_f = beg_f;
-    SFragmentExt new_end_f = end_f;
+    SFragment new_beg_f = beg_f;
+    SFragment new_end_f = end_f;
 
-    new_beg_f.frag.point.x = fmax(0.0f, fmin(beg_f.frag.point.x, max_x_));
-    new_end_f.frag.point.x = fmax(0.0f, fmin(end_f.frag.point.x, max_x_));
+    new_beg_f.point.x = fmax(0.0f, fmin(beg_f.point.x, max_x_));
+    new_end_f.point.x = fmax(0.0f, fmin(end_f.point.x, max_x_));
 */
-    float length = fabs(beg_f.frag.point.x - end_f.frag.point.x);
+    float length = fabs(beg_f.point.x - end_f.point.x);
     size_t step_cnt = size_t(roundf(length));
 
     if (step_cnt == 0)
@@ -188,7 +188,7 @@ void CRasterizer::fill_xseq(const SFragmentExt& beg_f,
     for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
     {
         float ratio = (float(cur_step) / length);
-        frag_vec_.push_back(::interpolate(beg_f, end_f, ratio).frag);
+        frag_vec_.push_back(::interpolate(beg_f, end_f, ratio));
     }
 }
 
@@ -210,9 +210,9 @@ int test_CRasterizer()
             vert_arr[i].point.x = float(rand()%CBuffer::DIM_W);
             vert_arr[i].point.y = float(rand()%CBuffer::DIM_H);
 
-            vert_arr[i].color = SColor(float(rand()&0xFF)/255.0f,
-                                       float(rand()&0xFF)/255.0f,
-                                       float(rand()&0xFF)/255.0f);
+            vert_arr[i].color = SColor{ float(rand()&0xFF)/255.0f,
+                                        float(rand()&0xFF)/255.0f,
+                                        float(rand()&0xFF)/255.0f };
         }
 
         rasterizer.fill_face(vert_arr);

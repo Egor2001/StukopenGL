@@ -90,7 +90,7 @@ SColorExt extend(const SColor& color)
 
 SColor narrow(const SColorExt& color)
 {
-    return SColor(color.r, color.g, color.b)*color.a;
+    return SColor{ color.r, color.g, color.b }*color.a;
 }
 
 //} //namespace sgl 
