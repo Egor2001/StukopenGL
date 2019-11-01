@@ -11,6 +11,7 @@
 #include <wchar.h>
 #include <cfloat>
 #include <vector>
+#include "SMatrixExt.h"
 #include "ShaderStructures.h"
 #include "memory/CIntrinsicAllocator.h"
 
@@ -56,6 +57,21 @@ public:
         return color_buf_;
     }
 
+    SMatrixExt get_matrix() const
+    {
+        float side = float(std::min(DIM_W, DIM_H));
+
+        float x_scale =  0.5f*side;
+        float y_scale = -0.5f*side;
+
+        float x_shift = 0.5*float(DIM_W);
+        float y_shift = 0.5*float(DIM_H);
+
+        return SMatrixExt(SVectorExt(x_scale, 0.0f, 0.0f, x_shift),
+                          SVectorExt(0.0f, y_scale, 0.0f, y_shift),
+                          SVectorExt(0.0f, 0.0f, 1.0f, 0.0f));
+    }
+
     void render(const CIntrinsicVector<SFragment>& fragment_vec)
     {
         for (const auto& fragment : fragment_vec)
@@ -81,11 +97,9 @@ public:
         }
     }
 
-    void clear()
+    void clear(const SBufColor& color_val = SBufColor(), 
+               const float depth_val = FLT_MAX)
     {
-        SBufColor color_val = SBufColor();
-        float     depth_val = FLT_MAX;
-
         wchar_t color_wchar = 0;
         wchar_t depth_wchar = 0;
         memcpy(&color_wchar, &color_val, sizeof(wchar_t));

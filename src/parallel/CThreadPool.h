@@ -19,7 +19,7 @@
 class CThreadPool
 {
 public:
-    using SFunctor = std::function<void()>;
+    using SFunctor = std::function<void(size_t)>;
 
     explicit CThreadPool(size_t thread_cnt);
 
@@ -50,7 +50,7 @@ CThreadPool::CThreadPool(size_t thread_cnt):
     thread_vec_(),
     func_queue_()
 {
-    auto thread_func = [this]/*() -> void*/
+    auto thread_func = [this](size_t thread_index)/* -> void*/
     {
         //will cause bad_call exception in case of not being initialized
         SFunctor work_func;
@@ -75,13 +75,13 @@ CThreadPool::CThreadPool(size_t thread_cnt):
                 func_queue_.pop();
             }
 
-            work_func();
+            work_func(thread_index);
         }
     };
 
     thread_vec_.reserve(thread_cnt);
     for (size_t i = 0; i < thread_cnt; ++i)
-        thread_vec_.emplace_back(std::move(thread_func));
+        thread_vec_.emplace_back(std::move(thread_func), i);
 }
 
 CThreadPool::~CThreadPool()
@@ -132,7 +132,7 @@ int test_CThreadPool()
         CThreadPool thread_pool(POOL_SIZE);
 
         for (size_t i = 0; i < ARR_SIZE; ++i)
-            thread_pool.push_task([&var, i](){ ++var[i]; });
+            thread_pool.push_task([&var, i](size_t n){ ++var[i]; ++var[n]; });
     }
     
     for (size_t i = 0; i < ARR_SIZE; ++i)
