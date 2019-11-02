@@ -83,10 +83,7 @@ SVector& SVector::operator *= (float scale)
 SVector& SVector::normalize()
 {
     float len = sqrtf(x*x + y*y + z*z);
-    if (len > FLT_EPSILON)
-        return ((*this) *= (1.0f/len));
-
-    return *this;
+    return ((*this) *= (1.0f/len));
 }
 
 SVector operator - (const SVector& vec)
@@ -97,7 +94,7 @@ SVector operator - (const SVector& vec)
 SVector operator + (const SVector& lhs, const SVector& rhs)
 {
     SVector result = lhs;
-    return (result + rhs);
+    return (result += rhs);
 }
 
 SVector operator - (const SVector& rhs, const SVector& lhs)
@@ -133,14 +130,12 @@ SVector mul(const SVector& lhs, const SVector& rhs)
 float abs(const SVector& vec)
 {
     float result = sqrtf(dot(vec, vec));
-
     return result;
 }
 
 SVector normal(const SVector& vec)
 {
     SVector result = vec*(1.0f/abs(vec));
-
     return result;
 }
 

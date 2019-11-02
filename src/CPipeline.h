@@ -3,9 +3,9 @@
 
 #include "CObject.h"
 #include "SColor.h"
-#include "CCamera.h"
-#include "CLight.h"
-#include "CVertexShader.h"
+#include "SCamera.h"
+#include "SLight.h"
+#include "SVertexShader.h"
 #include "CPerspective.h"
 #include "CRasterizer.h"
 #include "CBuffer.h"
@@ -20,8 +20,8 @@ struct SScene
 {
     CObject    object;
     SMatrixExt matrix;
-    CCamera    camera;
-    CLight     light;
+    SCamera    camera;
+    SLight     light;
 };
 
 class CPipeline
@@ -60,10 +60,17 @@ CPipeline::~CPipeline()
 
 void CPipeline::render_scene(const SScene& scene)
 {
-    SMatrixExt proj_mtx = buffer_.get_matrix()*projection_.get_matrix();
+    SVertexShader vert_shader = SVertexShader
+    {
+        .modelview_mtx = scene.camera.get_matrix()*
+                         scene.matrix,
 
-    CVertexShader vert_shader = CVertexShader(scene.camera.get_matrix()*
-                                              scene.matrix); 
+        .projection_mtx = buffer_.get_matrix()*
+                          projection_.get_matrix()
+    }; 
+    
+    SLight light = scene.light;
+    light.point = light.point - scene.camera.pos;
 
     SVertex face[3] = {};
     for (auto& index : scene.object.index_buf())
@@ -73,19 +80,12 @@ void CPipeline::render_scene(const SScene& scene)
         {
             face[i] = scene.object.vertex_buf()[index.arr[i]];
             face[i].color = SColor{ 0.5f, 0.5f, 0.5f };
-            face[i] = scene.light.apply(vert_shader.apply(face[i]));
-            face[i].point = proj_mtx*face[i].point;
+            face[i] = vert_shader.apply(face[i], light, 
+                                        SVector{ 0.0f, 0.0f, 0.0f});
         }
 
         rasterizer_.fill_face(face);
     }
-
-    printf("fragments vector size: %lu\n", rasterizer_.frag_vec().size());
-//    for (auto& frag : rasterizer_.frag_vec())
-//        printf("point: x=%.3f y=%.3f z=%.3f; "
-//               "color: r=%.3f g=%.3f b=%.3f\n", 
-//                frag.point.x, frag.point.y, frag.point.z,
-//                frag.color.r, frag.color.g, frag.color.b);
 
     buffer_.render(rasterizer_.frag_vec());
     rasterizer_.clear();

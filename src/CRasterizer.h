@@ -149,7 +149,8 @@ void CRasterizer::fill_face(const SVertex v_arr[3])
 void CRasterizer::fill_half(const SFragment& beg_f, 
                             const SFragment& end_f,
                             const SFragment& top_f)
-{ //TODO: check beg & end Y coordinate equality requirement
+{
+//TODO: check beg & end Y coordinate equality requirement
     float length = fabs(top_f.point.y - beg_f.point.y);
     size_t step_cnt = size_t(roundf(length));
 
@@ -217,17 +218,7 @@ int test_CRasterizer()
 
         rasterizer.fill_face(vert_arr);
     } 
-/*
-    printf("rasterizer.frag_vec().size() = %lu \n", 
-            rasterizer.frag_vec().size());
 
-    for (const auto& frag : rasterizer.frag_vec())
-    {
-        printf("frag {x=%lu y=%lu depth=%f color={%u %u %u %u}} \n",
-                frag.x, frag.y, frag.depth,
-                frag.color.r, frag.color.g, frag.color.b, frag.color.a); 
-    }
-*/
     buf.render(rasterizer.frag_vec());
     scr.write(buf.data(), buf.byte_size());
 

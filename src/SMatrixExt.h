@@ -26,6 +26,8 @@ SMatrixExt operator * (const SMatrixExt& mtx, const SMatrixExt& mul);
 
 SVectorExt operator * (const SMatrixExt& mtx, const SVectorExt& vec);
 
+SVector operator * (const SMatrixExt& mtx, const SVector& vec);
+
 SMatrixExt sgl_translate_mtx(const SVector& vec);
 SMatrixExt sgl_new_basis_mtx(const SVector& new_x, 
                              const SVector& new_y, 
@@ -165,6 +167,16 @@ SVectorExt operator * (const SMatrixExt& mtx, const SVectorExt& vec)
     for (size_t y = 0; y < 4; ++y)
         result[y] = _mm_cvtss_f32(_mm_dp_ps(mtx.as_xmm_vec[y], 
                                             vec.as_xmm, 0b11111111));
+
+    return result;
+}
+
+SVector operator * (const SMatrixExt& mtx, const SVector& vec)
+{
+    SVector result = SVector{ 0.0f, 0.0f, 0.0f };
+    for (size_t y = 0; y < 3; ++y)
+    for (size_t x = 0; x < 3; ++x)
+        result.vec[y] += mtx.mtx[y][x]*vec.vec[x];
 
     return result;
 }

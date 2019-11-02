@@ -14,27 +14,11 @@
 #include "src/CScreen.h"
 #include "src/CBuffer.h"
 #include "src/CObject.h"
-#include "src/CCamera.h"
-#include "src/CVertexShader.h"
-#include "src/CLight.h"
+#include "src/SCamera.h"
+#include "src/SVertexShader.h"
+#include "src/SLight.h"
 #include "src/CPerspective.h"
 #include "src/CPipeline.h"
-
-int test_pipeline(const SScene& scene)
-{
-    CPerspective projection = CPerspective(1.0f, 2.5f);
-    CRasterizer  rasterizer = CRasterizer(float(CBuffer::DIM_W), 
-                                          float(CBuffer::DIM_H));
-    CScreen screen = CScreen();
-
-    CPipeline pipeline = CPipeline(std::move(rasterizer), 
-                                   std::move(projection));
-    pipeline.render_scene(scene);
-    pipeline.flush_screen(screen);
-    //pipeline.clear_buffer();
-
-    return 0;
-}
 
 int main(int argc, char* argv[])
 {
@@ -52,24 +36,52 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    float ang = M_PI/4.0f;
     SScene scene = 
     {
         .object = CObject(),
+        .matrix = SMatrixExt(),
 
-        .matrix = SMatrixExt(SVectorExt(cosf(ang), 0.0f, -sinf(ang), 0.0f),
-                             SVectorExt(0.0f,      1.0f,       0.0f, 0.0f),
-                             SVectorExt(sinf(ang), 0.0f,  cosf(ang), 0.0f)),
+        .camera = SCamera
+        {
+            .pos = SVector{ 0.0f, 1.0f, 2.0f },
+            .dir = SVector{ 0.0f, 0.0f, -2.0f },
+            .up  = SVector{ 0.0f, 1.0f, 0.0f }
+        },
 
-        .camera = CCamera(SVector{ 0.0f, 1.0f, 2.0f },
-                          SVector{ 0.0f, 0.0f, -2.0f }),
-
-        .light  = CLight(SVectorExt(5.0f, 5.0f, -5.0f, 1.0f),
-                         SColor{ 1.0f, 1.0f, 1.0f })
+        .light = SLight
+        { 
+            .point = SVector{ 2.0f, 0.0f, 1.0f },
+            .color = SColor{ 1.0f, 1.0f, 0.0f },
+            //.phong_ads = SVector{ 0.25f, 0.5f, 0.25f },
+            .phong_ads = SVector{ 0.0f, 0.0f, 1.0f },
+            .phong_pow = 10.0f
+        }
     };
 
     scene.object.parse_from(obj_file);
-    test_pipeline(scene);
+
+    CPerspective projection = CPerspective(1.0f, 2.5f);
+    CRasterizer  rasterizer = CRasterizer(float(CBuffer::DIM_W), 
+                                          float(CBuffer::DIM_H));
+    CScreen screen = CScreen();
+
+    CPipeline pipeline = CPipeline(std::move(rasterizer), 
+                                   std::move(projection));
+
+    size_t cnt = 0;
+    while (true)
+    {
+        ++cnt;
+        float ang = float(cnt)*M_PI/180.0f;
+        scene.matrix = 
+            SMatrixExt(SVectorExt(cosf(ang), 0.0f, -sinf(ang), 0.0f),
+                       SVectorExt(0.0f,      1.0f,       0.0f, 0.0f),
+                       SVectorExt(sinf(ang), 0.0f,  cosf(ang), 0.0f));
+
+        pipeline.render_scene(scene);
+        pipeline.flush_screen(screen);
+        pipeline.clear_buffer();
+    }
 
     if (obj_file)
     {
