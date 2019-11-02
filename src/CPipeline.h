@@ -75,13 +75,10 @@ void CPipeline::render_scene(const SScene& scene)
     SVertex face[3] = {};
     for (auto& index : scene.object.index_buf())
     {
-        //TODO: to fix object class to set color in object
         for (size_t i = 0; i < 3; ++i)
         {
-            face[i] = scene.object.vertex_buf()[index.arr[i]];
-            face[i].color = SColor{ 0.5f, 0.5f, 0.5f };
-            face[i] = vert_shader.apply(face[i], light, 
-                                        SVector{ 0.0f, 0.0f, 0.0f});
+            face[i] = vert_shader.apply(scene.object.vertex_buf()[index.arr[i]],
+                                        light, SVector{});
         }
 
         rasterizer_.fill_face(face);

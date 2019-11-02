@@ -45,7 +45,7 @@ public:
         return index_buf_;
     }
 
-    bool parse_from(FILE* obj_file);
+    bool parse_from(FILE* obj_file, const SColor& color_set = SColor{});
     bool write_to  (FILE* obj_file) const;
 
 private:
@@ -85,7 +85,7 @@ CObject::~CObject()
     index_buf_ .clear();
 }
 
-bool CObject::parse_from(FILE* obj_file)
+bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
 {
     bool result = false;
 
@@ -188,6 +188,7 @@ bool CObject::parse_from(FILE* obj_file)
                             size_t cur_normal_idx = normal_idx_vec[cur_i]-1;
                             cur_vertex.point  = vector_temp_buf[cur_vector_idx];
                             cur_vertex.normal = normal_temp_buf[cur_normal_idx];
+                            cur_vertex.color = color_set;
 
                             cur_index_vec.push_back(vertex_buf_.size());
                             vertex_buf_.push_back(cur_vertex);

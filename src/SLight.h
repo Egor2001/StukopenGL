@@ -49,7 +49,7 @@ SColor SLight::apply(const SVertex& vertex, const SVector& eyepos) const
     SVector medial = ::normal(dir_to + ::normal(eyepos - vecpos));
 
     float ambient = 1.0f;
-    float diffuse = fmax(0.0f, dot(dir_to, vertex.normal));
+    float diffuse = fmax(0.0f, -dot(dir_to, vertex.normal));
     float specular = powf(fmax(0.0f, -dot(medial, vertex.normal)), phong_pow); 
 
     float scale = dot(phong_ads, SVector{ ambient, diffuse, specular });

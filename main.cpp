@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <random>
+#include <chrono>
 #include <ctime>
 
 //double including all tested files to check collisions
@@ -50,15 +51,15 @@ int main(int argc, char* argv[])
 
         .light = SLight
         { 
-            .point = SVector{ 2.0f, 0.0f, 1.0f },
+            .point = SVector{ 1.0f, 1.0f, 3.0f },
             .color = SColor{ 1.0f, 1.0f, 0.0f },
-            //.phong_ads = SVector{ 0.25f, 0.5f, 0.25f },
-            .phong_ads = SVector{ 0.0f, 0.0f, 1.0f },
-            .phong_pow = 10.0f
+            .phong_ads = SVector{ 0.25f, 0.25f, 0.5f },
+            //.phong_ads = SVector{ 0.0f, 1.0f, 0.0f },
+            .phong_pow = 16.0f
         }
     };
 
-    scene.object.parse_from(obj_file);
+    scene.object.parse_from(obj_file, SColor{ 1.0f, 1.0f, 1.0f });
 
     CPerspective projection = CPerspective(1.0f, 2.5f);
     CRasterizer  rasterizer = CRasterizer(float(CBuffer::DIM_W), 
@@ -68,9 +69,15 @@ int main(int argc, char* argv[])
     CPipeline pipeline = CPipeline(std::move(rasterizer), 
                                    std::move(projection));
 
+//    auto beg_time = std::chrono::steady_clock::now();
+//    std::chrono::duration<double> seconds_elapsed;
+
+//    double sum_fps = 0.0f;
     size_t cnt = 0;
-    while (true)
+    while (true/*cnt < 1000*/)
     {
+//        beg_time = std::chrono::steady_clock::now();
+
         ++cnt;
         float ang = float(cnt)*M_PI/180.0f;
         scene.matrix = 
@@ -81,7 +88,12 @@ int main(int argc, char* argv[])
         pipeline.render_scene(scene);
         pipeline.flush_screen(screen);
         pipeline.clear_buffer();
+
+//        seconds_elapsed = (beg_time - std::chrono::steady_clock::now());
+//        sum_fps += 1.0/seconds_elapsed.count();
     }
+
+//    printf("average fps: %lg", sum_fps/double(cnt));
 
     if (obj_file)
     {
