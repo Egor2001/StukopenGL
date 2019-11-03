@@ -7,8 +7,8 @@
 #include <cstdint>
 #include <ctime>
 
-#include "SVectorExt.h"
-#include "SMatrixExt.h"
+#include "math/SVectorExt.h"
+#include "math/SMatrixExt.h"
 
 //namespace sgl {
 

@@ -2,10 +2,11 @@
 #define SGL_CPIPELINE_H
 
 #include "CObject.h"
-#include "SColor.h"
+#include "math/SColor.h"
 #include "SCamera.h"
 #include "SLight.h"
 #include "SVertexShader.h"
+#include "SFragmentShader.h"
 #include "CPerspective.h"
 #include "CRasterizer.h"
 #include "CBuffer.h"
@@ -68,6 +69,8 @@ void CPipeline::render_scene(const SScene& scene)
         .projection_mtx = buffer_.get_matrix()*
                           projection_.get_matrix()
     }; 
+
+    SFragmentShader frag_shader = SFragmentShader{};
     
     SLight light = scene.light;
     light.point = light.point - scene.camera.pos;

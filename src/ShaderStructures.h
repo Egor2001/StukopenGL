@@ -9,8 +9,8 @@
 #include <immintrin.h>
 
 //vertex
-#include "SVectorExt.h"
-#include "SColorExt.h"
+#include "math/SVectorExt.h"
+#include "math/SColorExt.h"
 
 //namespace sgl {
 

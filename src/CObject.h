@@ -10,8 +10,8 @@
 #include <cstring>
 #include <vector>
 
-#include "SVector.h"
-#include "SColor.h" 
+#include "math/SVector.h"
+#include "math/SColor.h" 
 #include "ShaderStructures.h"
 
 //namespace sgl { 

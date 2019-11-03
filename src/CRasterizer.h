@@ -11,8 +11,8 @@
 #include <cmath>
 #include <vector>
 #include "ShaderStructures.h"
-#include "SVector.h" 
-#include "SColor.h" 
+#include "math/SVector.h" 
+#include "math/SColor.h" 
 #include "CScreen.h"
 #include "CBuffer.h"
 #include "memory/CIntrinsicAllocator.h"
@@ -39,6 +39,7 @@ public:
 
     void clear()
     {
+//        vert_vec_.clear();
         frag_vec_.clear();
     }
 
@@ -57,6 +58,7 @@ public:
     void fill_xseq(const SFragment& beg_f, const SFragment& end_f);
 
 private:
+//    CIntrinsicVector<SVertex>   vert_vec_;
     CIntrinsicVector<SFragment> frag_vec_;
 
     float max_x_;
@@ -64,12 +66,14 @@ private:
 };
 
 CRasterizer::CRasterizer(float max_x_set, float max_y_set):
+//    vert_vec_(),
     frag_vec_(),
     max_x_(max_x_set),
     max_y_(max_y_set)
 {}
 
 CRasterizer::CRasterizer(CRasterizer&& move_rast):
+//    vert_vec_(std::move(move_rast.vert_vec_)),
     frag_vec_(std::move(move_rast.frag_vec_)),
     max_x_   (std::move(move_rast.max_x_)),
     max_y_   (std::move(move_rast.max_y_))
@@ -77,6 +81,7 @@ CRasterizer::CRasterizer(CRasterizer&& move_rast):
 
 CRasterizer& CRasterizer::operator = (CRasterizer&& move_rast)
 {
+//    std::swap(vert_vec_, move_rast.vert_vec_);
     std::swap(frag_vec_, move_rast.frag_vec_);
     std::swap(max_x_,    move_rast.max_x_);
     std::swap(max_y_,    move_rast.max_y_);
@@ -89,6 +94,7 @@ CRasterizer::~CRasterizer()
     max_x_ = max_y_ = 0;
 
     frag_vec_.clear();
+//    vert_vec_.clear();
 }
 
 void CRasterizer::rast_line(const SVertex& beg_v, 
@@ -136,8 +142,8 @@ void CRasterizer::fill_face(const SVertex v_arr[3])
     }
     else
     {
-        float ratio = roundf(beg_f.point.y - mid_f.point.y) / 
-                            (beg_f.point.y - end_f.point.y);
+        float ratio = (beg_f.point.y - mid_f.point.y) / 
+                      (beg_f.point.y - end_f.point.y);
 
         SFragment div_f = ::interpolate(beg_f, end_f, ratio);
 
@@ -150,46 +156,39 @@ void CRasterizer::fill_half(const SFragment& beg_f,
                             const SFragment& end_f,
                             const SFragment& top_f)
 {
-//TODO: check beg & end Y coordinate equality requirement
     float length = fabs(top_f.point.y - beg_f.point.y);
-    size_t step_cnt = size_t(roundf(length));
-
-    if (step_cnt == 0)
-        return;
-
-    for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
+    
+    if (length < 0.5f)
     {
-        float ratio = (float(cur_step) / length);
-        
-        fill_xseq(::interpolate(top_f, beg_f, ratio), 
-                  ::interpolate(top_f, end_f, ratio));
+        fill_xseq(beg_f, end_f);
+    }
+    else
+    {
+        float delta = 1.0f/length;
+        float bound = 1.0f + delta;
+
+        for (float cur_ratio = 0.0f; cur_ratio < bound; cur_ratio += delta)
+            fill_xseq(::interpolate(top_f, beg_f, cur_ratio), 
+                      ::interpolate(top_f, end_f, cur_ratio));
     }
 }
 
 void CRasterizer::fill_xseq(const SFragment& beg_f, 
                             const SFragment& end_f)
 {
-/*
-    if (beg_f.point.y < 0.0f || beg_f.point.y > max_y_ ||
-        end_f.point.y < 0.0f || end_f.point.y > max_y_)
-        return;
-
-    SFragment new_beg_f = beg_f;
-    SFragment new_end_f = end_f;
-
-    new_beg_f.point.x = fmax(0.0f, fmin(beg_f.point.x, max_x_));
-    new_end_f.point.x = fmax(0.0f, fmin(end_f.point.x, max_x_));
-*/
     float length = fabs(beg_f.point.x - end_f.point.x);
-    size_t step_cnt = size_t(roundf(length));
 
-    if (step_cnt == 0)
-        return;
-
-    for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
+    if (length < 0.5f)
     {
-        float ratio = (float(cur_step) / length);
-        frag_vec_.push_back(::interpolate(beg_f, end_f, ratio));
+        frag_vec_.push_back(::interpolate(beg_f, end_f, 0.5f));
+    }
+    else
+    {
+        float delta = 1.0f/length;
+        float bound = 1.0f + delta;
+
+        for (float cur_ratio = 0.0f; cur_ratio < bound; cur_ratio += delta)
+            frag_vec_.push_back(::interpolate(beg_f, end_f, cur_ratio));
     }
 }
 

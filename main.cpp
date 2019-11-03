@@ -8,9 +8,9 @@
 
 //double including all tested files to check collisions
 
-#include "src/SVectorExt.h"
-#include "src/SMatrixExt.h"
-#include "src/SColorExt.h"
+#include "src/math/SVectorExt.h"
+#include "src/math/SMatrixExt.h"
+#include "src/math/SColorExt.h"
 #include "src/CRasterizer.h"
 #include "src/CScreen.h"
 #include "src/CBuffer.h"
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
         { 
             .point = SVector{ 1.0f, 1.0f, 3.0f },
             .color = SColor{ 1.0f, 1.0f, 0.0f },
-            .phong_ads = SVector{ 0.25f, 0.25f, 0.5f },
+            .phong_ads = SVector{ 0.125f, 0.250f, 0.625f },
             //.phong_ads = SVector{ 0.0f, 1.0f, 0.0f },
             .phong_pow = 16.0f
         }
@@ -69,14 +69,14 @@ int main(int argc, char* argv[])
     CPipeline pipeline = CPipeline(std::move(rasterizer), 
                                    std::move(projection));
 
-//    auto beg_time = std::chrono::steady_clock::now();
-//    std::chrono::duration<double> seconds_elapsed;
+    auto beg_time = std::chrono::steady_clock::now();
+    std::chrono::duration<double> seconds_elapsed;
 
-//    double sum_fps = 0.0f;
+    double sum_fps = 0.0f;
     size_t cnt = 0;
-    while (true/*cnt < 1000*/)
+    while (cnt < 1000)
     {
-//        beg_time = std::chrono::steady_clock::now();
+        beg_time = std::chrono::steady_clock::now();
 
         ++cnt;
         float ang = float(cnt)*M_PI/180.0f;
@@ -89,11 +89,11 @@ int main(int argc, char* argv[])
         pipeline.flush_screen(screen);
         pipeline.clear_buffer();
 
-//        seconds_elapsed = (beg_time - std::chrono::steady_clock::now());
-//        sum_fps += 1.0/seconds_elapsed.count();
+        seconds_elapsed = (beg_time - std::chrono::steady_clock::now());
+        sum_fps += 1.0/seconds_elapsed.count();
     }
 
-//    printf("average fps: %lg", sum_fps/double(cnt));
+    printf("average fps: %lg", sum_fps/double(cnt));
 
     if (obj_file)
     {

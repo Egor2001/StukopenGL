@@ -11,7 +11,7 @@
 #include <wchar.h>
 #include <cfloat>
 #include <vector>
-#include "SMatrixExt.h"
+#include "math/SMatrixExt.h"
 #include "ShaderStructures.h"
 #include "memory/CIntrinsicAllocator.h"
 

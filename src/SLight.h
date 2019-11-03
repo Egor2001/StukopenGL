@@ -5,8 +5,8 @@
 #include <cstdlib>
 #include <cstdint>
 
-#include "SVectorExt.h"
-#include "SColor.h"
+#include "math/SVectorExt.h"
+#include "math/SColor.h"
 
 //namespace sgl {
 

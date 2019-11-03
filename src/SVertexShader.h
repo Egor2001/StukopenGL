@@ -10,8 +10,8 @@
 
 //double including all tested files to check collisions
 #include "ShaderStructures.h"
-#include "SVectorExt.h"
-#include "SMatrixExt.h"
+#include "math/SVectorExt.h"
+#include "math/SMatrixExt.h"
 #include "SCamera.h" 
 #include "SLight.h" 
 
