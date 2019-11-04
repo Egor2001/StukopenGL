@@ -157,6 +157,7 @@ void CRasterizer::fill_half(const SFragment& beg_f,
                             const SFragment& top_f)
 {
     float length = fabs(top_f.point.y - beg_f.point.y);
+    size_t step_cnt = size_t(ceilf(length));
     
     if (length < 0.5f)
     {
@@ -164,12 +165,12 @@ void CRasterizer::fill_half(const SFragment& beg_f,
     }
     else
     {
-        float delta = 1.0f/length;
-        float bound = 1.0f + delta;
-
-        for (float cur_ratio = 0.0f; cur_ratio < bound; cur_ratio += delta)
-            fill_xseq(::interpolate(top_f, beg_f, cur_ratio), 
-                      ::interpolate(top_f, end_f, cur_ratio));
+        for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
+        {
+            float ratio = float(cur_step)/length;
+            fill_xseq(::interpolate(top_f, beg_f, ratio), 
+                      ::interpolate(top_f, end_f, ratio));
+        }
     }
 }
 
@@ -177,6 +178,7 @@ void CRasterizer::fill_xseq(const SFragment& beg_f,
                             const SFragment& end_f)
 {
     float length = fabs(beg_f.point.x - end_f.point.x);
+    size_t step_cnt = size_t(ceilf(length));
 
     if (length < 0.5f)
     {
@@ -184,11 +186,11 @@ void CRasterizer::fill_xseq(const SFragment& beg_f,
     }
     else
     {
-        float delta = 1.0f/length;
-        float bound = 1.0f + delta;
-
-        for (float cur_ratio = 0.0f; cur_ratio < bound; cur_ratio += delta)
-            frag_vec_.push_back(::interpolate(beg_f, end_f, cur_ratio));
+        for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
+        {
+            float ratio = float(cur_step)/length;
+            frag_vec_.push_back(::interpolate(beg_f, end_f, ratio));
+        }
     }
 }
 

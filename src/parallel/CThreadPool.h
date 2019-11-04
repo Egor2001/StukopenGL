@@ -4,6 +4,7 @@
 //general
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include <vector>
 #include <queue>
@@ -14,6 +15,8 @@
 #include <cstdint>
 
 //namespace sgl {
+
+//namespace parallel {
 
 //TODO: rewrite with templates
 class CThreadPool
@@ -34,6 +37,7 @@ public:
     void push_task(SFunctor&& task);
 
 private:
+    //init flag to false
     bool terminate_flag_; 
 
     std::mutex              mutex_;
@@ -140,6 +144,8 @@ int test_CThreadPool()
 
     return 0;
 }
+
+//} //namespace parallel 
 
 //} //namespace sgl
 

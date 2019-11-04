@@ -2,12 +2,12 @@
 #define SGL_CPARALLELRASTERIZER_H
 
 #include "parallel/CThreadPool.h"
+#include "parallel/CLatch.h"
 #include "memory/CIntrinsicAllocator.h"
 #include "CRasterizer.h"
 
 //namespace sgl {
 
-//TODO: to implement thread pool sync() function
 class CParallelRasterizer
 {
 public:
@@ -16,12 +16,20 @@ public:
     //using vert_shader_t = SVertexShader;
     //using frag_shader_t = SFragmentShader;
 
-    CParallelRasterizer();
+    CParallelRasterizer(float max_x_set, float max_y_set);
 
-    void sync() const
-    {
-        thread_pool_.sync();
-    }
+    CParallelRasterizer             (const CParallelRasterizer&) = delete;
+    CParallelRasterizer& operator = (const CParallelRasterizer&) = delete;
+
+    CParallelRasterizer             (CParallelRasterizer&&);
+    CParallelRasterizer& operator = (CParallelRasterizer&&);
+
+    ~CParallelRasterizer();
+
+    //TODO: to replace vector with something more flexible 
+    CIntrinsicVector<SFragment> frag_vec() const;
+
+    void clear();
 
     void rast_line(const SVertex& beg_v, 
                    const SVertex& end_v);
@@ -33,9 +41,51 @@ public:
     void fill_face(const SVertex v_arr[3]);
 
 private:
-    CThreadPool thread_pool_;
+    //mutable to make parallel rasterizer meet rasterizer interface
+    mutable CThreadPool thread_pool_;
+
     CRasterizer rasterizer_arr_[THREAD_CNT];
 };
+
+CIntrinsicVector<SFragment> CParallelRasterizer::frag_vec() const;
+{
+    CIntrinsicVector result;
+
+    //TODO: to use latch from concurrency TS
+    CLatch latch{ THREAD_CNT };
+    for (size_t i = 0; i < THREAD_CNT; ++i)
+    {
+        thread_pool_.push_task([this, &latch](size_t thread_idx)
+        {
+            //rasterizer_arr_[thread_idx_].apply_frag_shader(frag_shader);
+            latch.count_down_and_wait();
+        });
+    }
+    latch.wait();
+
+    //TODO: to replace copying with something not so expensive 
+    for (size_t i = 0; i < THREAD_CNT; ++i)
+        result.insert(result.end(), 
+                      rasterizer_arr_[i].frag_vec().begin(),
+                      rasterizer_arr_[i].frag_vec().end());
+
+    return result;
+}
+
+CParallelRasterizer::void clear()
+{
+    //TODO: to use latch from concurrency TS
+    CLatch latch{ THREAD_CNT };
+    for (size_t i = 0; i < THREAD_CNT; ++i)
+    {
+        thread_pool_.push_task([this, &latch](size_t thread_idx)
+        {
+            rasterizer_arr_[thread_idx_].clear();
+            latch.count_down_and_wait();
+        });
+    }
+    latch.wait();
+}
 
 void CParallelRasterizer::rast_line(const SVertex& beg_v, 
                                     const SVertex& end_v)
