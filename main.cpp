@@ -62,11 +62,12 @@ int main(int argc, char* argv[])
     scene.object.parse_from(obj_file, SColor{ 1.0f, 1.0f, 1.0f });
 
     CPerspective projection = CPerspective(1.0f, 2.5f);
-    CRasterizer  rasterizer = CRasterizer(float(CBuffer::DIM_W), 
-                                          float(CBuffer::DIM_H));
+    CParallelRasterizer rasterizer = 
+        CParallelRasterizer(float(CBuffer::DIM_W), float(CBuffer::DIM_H));
+
     CScreen screen = CScreen();
 
-    CPipeline pipeline = CPipeline(std::move(rasterizer), 
+    CPipeline pipeline = CPipeline(std::move(rasterizer),
                                    std::move(projection));
 
     auto beg_time = std::chrono::steady_clock::now();
@@ -74,7 +75,7 @@ int main(int argc, char* argv[])
 
     double sum_fps = 0.0f;
     size_t cnt = 0;
-    while (cnt < 1000)
+    while (cnt < 100)
     {
         beg_time = std::chrono::steady_clock::now();
 

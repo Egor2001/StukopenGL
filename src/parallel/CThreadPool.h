@@ -28,8 +28,6 @@ public:
 
     CThreadPool             (const CThreadPool&) = delete;
     CThreadPool& operator = (const CThreadPool&) = delete;
-    CThreadPool             (CThreadPool&&) = delete;
-    CThreadPool& operator = (CThreadPool&&) = delete;
 
     ~CThreadPool();
 

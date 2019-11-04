@@ -9,6 +9,7 @@
 #include "SFragmentShader.h"
 #include "CPerspective.h"
 #include "CRasterizer.h"
+#include "CParallelRasterizer.h"
 #include "CBuffer.h"
 #include "CScreen.h"
 
@@ -28,7 +29,7 @@ struct SScene
 class CPipeline
 {
 public:
-    using rast_t = CRasterizer;
+    using rast_t = CParallelRasterizer;
     using proj_t = CPerspective;
 
     CPipeline(rast_t&& rasterizer_set,

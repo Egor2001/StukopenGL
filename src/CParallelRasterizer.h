@@ -22,7 +22,7 @@ public:
     CParallelRasterizer& operator = (const CParallelRasterizer&) = delete;
 
     CParallelRasterizer             (CParallelRasterizer&&);
-    CParallelRasterizer& operator = (CParallelRasterizer&&);
+//    CParallelRasterizer& operator = (CParallelRasterizer&&);
 
     ~CParallelRasterizer();
 
@@ -44,12 +44,38 @@ private:
     //mutable to make parallel rasterizer meet rasterizer interface
     mutable CThreadPool thread_pool_;
 
-    CRasterizer rasterizer_arr_[THREAD_CNT];
+    std::vector<CRasterizer> rasterizer_vec_;
 };
 
-CIntrinsicVector<SFragment> CParallelRasterizer::frag_vec() const;
+CParallelRasterizer::
+CParallelRasterizer(float max_x_set, float max_y_set):
+    thread_pool_(THREAD_CNT),
+    rasterizer_vec_()
 {
-    CIntrinsicVector result;
+    for (size_t i = 0; i < THREAD_CNT; ++i)
+        rasterizer_vec_.emplace_back(max_x_set, max_y_set);
+}
+
+CParallelRasterizer::
+CParallelRasterizer(CParallelRasterizer&& move_rasterizer):
+    thread_pool_(THREAD_CNT),
+    rasterizer_vec_(std::move(move_rasterizer.rasterizer_vec_))
+{}
+/*
+CParallelRasterizer& 
+CParallelRasterizer::operator = (CParallelRasterizer&& move_rasterizer)
+{
+    std::swap(rasterizer_vec_, move_rasterizer.rasterizer_vec_);
+
+    return *this;
+}
+*/
+CParallelRasterizer::~CParallelRasterizer()
+{}
+
+CIntrinsicVector<SFragment> CParallelRasterizer::frag_vec() const
+{
+    CIntrinsicVector<SFragment> result;
 
     //TODO: to use latch from concurrency TS
     CLatch latch{ THREAD_CNT };
@@ -57,7 +83,7 @@ CIntrinsicVector<SFragment> CParallelRasterizer::frag_vec() const;
     {
         thread_pool_.push_task([this, &latch](size_t thread_idx)
         {
-            //rasterizer_arr_[thread_idx_].apply_frag_shader(frag_shader);
+            //rasterizer_vec_[thread_idx].apply_frag_shader(frag_shader);
             latch.count_down_and_wait();
         });
     }
@@ -66,13 +92,13 @@ CIntrinsicVector<SFragment> CParallelRasterizer::frag_vec() const;
     //TODO: to replace copying with something not so expensive 
     for (size_t i = 0; i < THREAD_CNT; ++i)
         result.insert(result.end(), 
-                      rasterizer_arr_[i].frag_vec().begin(),
-                      rasterizer_arr_[i].frag_vec().end());
+                      rasterizer_vec_[i].frag_vec().begin(),
+                      rasterizer_vec_[i].frag_vec().end());
 
     return result;
 }
 
-CParallelRasterizer::void clear()
+void CParallelRasterizer::clear()
 {
     //TODO: to use latch from concurrency TS
     CLatch latch{ THREAD_CNT };
@@ -80,7 +106,7 @@ CParallelRasterizer::void clear()
     {
         thread_pool_.push_task([this, &latch](size_t thread_idx)
         {
-            rasterizer_arr_[thread_idx_].clear();
+            rasterizer_vec_[thread_idx].clear();
             latch.count_down_and_wait();
         });
     }
@@ -90,9 +116,9 @@ CParallelRasterizer::void clear()
 void CParallelRasterizer::rast_line(const SVertex& beg_v, 
                                     const SVertex& end_v)
 {
-    auto task = [this](size_t i)
+    auto task = [this, &beg_v, &end_v](size_t i)
     {
-        rasterizer_arr_[i].rast_line(beg_v, end_v);
+        rasterizer_vec_[i].rast_line(beg_v, end_v);
     };
 
     thread_pool_.push_task(std::move(task));
@@ -102,9 +128,9 @@ void CParallelRasterizer::rast_face(const SVertex& beg_v,
                                     const SVertex& mid_v, 
                                     const SVertex& end_v)
 {
-    auto task = [this](size_t i)
+    auto task = [this, &beg_v, &mid_v, &end_v](size_t i)
     {
-        rasterizer_arr_[i].rast_face(beg_v, mid_v, end_v);
+        rasterizer_vec_[i].rast_face(beg_v, mid_v, end_v);
     };
 
     thread_pool_.push_task(std::move(task));
@@ -112,9 +138,9 @@ void CParallelRasterizer::rast_face(const SVertex& beg_v,
 
 void CParallelRasterizer::fill_face(const SVertex v_arr[3])
 {
-    auto task = [this](size_t i)
+    auto task = [this, &v_arr](size_t i)
     {
-        rasterizer_arr_[i].fill_face(v_arr);
+        rasterizer_vec_[i].fill_face(v_arr);
     };
 
     thread_pool_.push_task(std::move(task));
