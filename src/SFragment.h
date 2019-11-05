@@ -1,9 +1,5 @@
-#ifndef SGL_SHADER_STRUCTURES_H
-#define SGL_SHADER_STRUCTURES_H
-
-//general
-#include <cstdint>
-#include <cfloat>
+#ifndef SGL_SFRAGMENT_H
+#define SGL_SFRAGMENT_H
 
 //intrinsics (vectorization)
 #include <immintrin.h>
@@ -11,24 +7,15 @@
 //vertex
 #include "math/SVectorExt.h"
 #include "math/SColorExt.h"
+#include "SVertex.h"
 
 //namespace sgl {
 
-struct SVertex;
 struct SFragment;
 
 SFragment to_fragment(const SVertex& vertex);
 SFragment interpolate(const SFragment& beg, const SFragment& end, 
                       float ratio);
-
-struct alignas(alignof(SVectorExt)) SVertex
-{
-    SVectorExt point;
-    SVector    normal;
-    SColor     color;
-    float      tex_u;
-    float      tex_v;
-};
 
 struct alignas(32) SFragment
 {
@@ -68,7 +55,7 @@ SFragment to_fragment(const SVertex& vertex)
 }
 
 SFragment interpolate(const SFragment& beg, const SFragment& end, 
-                         float ratio)
+                      float ratio)
 {
     //exists only on Intel Haswell and newer
     if (false)
@@ -89,5 +76,5 @@ SFragment interpolate(const SFragment& beg, const SFragment& end,
 
 //} //namespace sgl
 
-#endif //SGL_SHADER_STRUCTURES_H
+#endif //SGL_SFRAGMENT_H
 

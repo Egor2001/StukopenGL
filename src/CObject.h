@@ -12,7 +12,8 @@
 
 #include "math/SVector.h"
 #include "math/SColor.h" 
-#include "ShaderStructures.h"
+#include "SVertex.h"
+#include "SFragment.h"
 
 //namespace sgl { 
 

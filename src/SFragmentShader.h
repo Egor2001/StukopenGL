@@ -1,25 +1,30 @@
 #ifndef SGL_SFRAGMENTSHADER_H
 #define SGL_SFRAGMENTSHADER_H
 
-#include "ShaderStructures.h"
+#include "SFragment.h"
+#include "SScene.h"
 
 //namespace sgl {
 
 struct SFragmentShader
 {
 //no constructors to make type trivial
-    using in_t = SFragment;
-    using out_t = SFragment;
+    void init(const SScene& scene, 
+              float max_x, float max_y);
 
-    SFragment apply(const SFragment& fragment);
+    template<typename TContainer>
+    void apply(SFragment& fragment, 
+               const TContainer& vert_container) const;
 };
 
-typename SFragmentShader::out_t 
-SFragmentShader::apply(const in_t& fragment)
-{
-    out_t result = fragment; 
-    return result;
-}
+void SFragmentShader::init(const SScene& scene, 
+                           float max_x, float max_y)
+{}
+
+template<typename TContainer>
+void SFragmentShader::apply(SFragment& fragment, 
+                            const TContainer& vert_container) const
+{}
 
 //} //namespace sgl
 

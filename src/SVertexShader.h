@@ -1,82 +1,50 @@
 #ifndef SGL_SVERTEXSHADER_H
 #define SGL_SVERTEXSHADER_H
 
-//general
-#include <cstdio>
-#include <cstdlib>
-#include <cstdint>
-#include <random>
-#include <ctime>
-
 //double including all tested files to check collisions
-#include "ShaderStructures.h"
-#include "math/SVectorExt.h"
-#include "math/SMatrixExt.h"
-#include "SCamera.h" 
-#include "SLight.h" 
+#include "SVertex.h"
+#include "SScene.h"
 
 //namespace sgl {
 
 struct SVertexShader
 {
 public:
-    using in_t  = SVertex;
-    using out_t = SVertex;
-
-    out_t apply(const in_t&) const;
-    out_t apply(const in_t&, const SLight&) const;
-    out_t apply(const in_t&, const SLight&, const SVector&) const;
+    void init(const SScene& scene, 
+              float max_x, float max_y);
+    void apply(SVertex& vertex) const;
     
     SMatrixExt modelview_mtx; 
     SMatrixExt projection_mtx; 
+    SLight     light;
+    SVector    eyepos;
 };
 
-typename SVertexShader::out_t 
-SVertexShader::apply(const in_t& in) const
+void SVertexShader::init(const SScene& scene, 
+                         float max_x, float max_y)
 {
-    out_t result = out_t();
+    float side = fmin(max_x, max_y);
+    
+    float xx = 0.5f*side;  float yy = -0.5f*side; 
+    float xw = 0.5f*max_x; float yw = 0.5f*max_y; 
 
-    result.point  = projection_mtx*modelview_mtx*in.point; 
-    result.normal = ::normal(modelview_mtx*in.normal); 
-    result.color  = in.color;
- 
-    return result;
+    SMatrixExt buf_mtx = SMatrixExt(SVectorExt{ xx,   0.0f, 0.0f, xw },
+                                    SVectorExt{ 0.0f, yy,   0.0f, yw },
+                                    SVectorExt{ 0.0f, 0.0f, 1.0f, 0.0f});
+
+    modelview_mtx  = scene.camera.get_matrix()*scene.matrix; 
+    projection_mtx = buf_mtx*scene.projection.get_matrix(); 
+
+    light  = scene.light;
+    eyepos = scene.camera.pos;
 }
 
-typename SVertexShader::out_t 
-SVertexShader::apply(const in_t& in, 
-                     const SLight& light) const
+void SVertexShader::apply(SVertex& vertex) const
 {
-    out_t result = out_t();
-
-    result.point  = modelview_mtx*in.point; 
-    result.normal = ::normal(modelview_mtx*in.normal); 
-    result.color  = in.color;
-    result.color  = light.apply(result);
-    result.point  = projection_mtx*result.point; 
- 
-    return result;
-}
-
-typename SVertexShader::out_t 
-SVertexShader::apply(const in_t& in, 
-                     const SLight& light, 
-                     const SVector& eyepos) const
-{
-    out_t result = out_t();
-
-    result.point  = modelview_mtx*in.point; 
-    result.normal = ::normal(modelview_mtx*in.normal); 
-    result.color  = in.color;
-    result.color  = light.apply(result, eyepos);
-    result.point  = projection_mtx*result.point; 
- 
-    return result;
-}
- 
-int test_SVertexShader()
-{
-    return 0;
+    vertex.point  = modelview_mtx*vertex.point; 
+    vertex.normal = ::normal(modelview_mtx*vertex.normal); 
+    vertex.color  = light.apply(vertex, eyepos);
+    vertex.point  = projection_mtx*vertex.point; 
 }
 
 //} //namespace sgl
