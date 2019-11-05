@@ -63,22 +63,11 @@ int main(int argc, char* argv[])
     CObject object;
     object.parse_from(obj_file, SColor{ 1.0f, 1.0f, 1.0f });
 
-<<<<<<< HEAD
-    CPerspective projection = CPerspective(1.0f, 2.5f);
-    CParallelRasterizer rasterizer = 
-        CParallelRasterizer(float(CBuffer::DIM_W), float(CBuffer::DIM_H));
-
-    CScreen screen = CScreen();
-
-    CPipeline pipeline = CPipeline(std::move(rasterizer),
-                                   std::move(projection));
-=======
     CScreen screen = CScreen();
 
     auto pipeline = 
         CPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
                                    float(CBuffer::DIM_H));
->>>>>>> testing
 
     auto beg_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> seconds_elapsed;

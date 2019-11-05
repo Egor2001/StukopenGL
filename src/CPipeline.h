@@ -8,12 +8,7 @@
 #include "SVertexShader.h"
 #include "SFragmentShader.h"
 #include "CPerspective.h"
-<<<<<<< HEAD
-#include "CRasterizer.h"
-#include "CParallelRasterizer.h"
-=======
 #include "CFillRasterizer.h"
->>>>>>> testing
 #include "CBuffer.h"
 #include "CScreen.h"
 #include "SScene.h"
@@ -26,12 +21,7 @@ template<typename R,
 class CPipeline
 {
 public:
-<<<<<<< HEAD
-    using rast_t = CParallelRasterizer;
-    using proj_t = CPerspective;
-=======
     using TRasterizer = R;
->>>>>>> testing
 
     using TVertShader = VS; 
     using TFragShader = FS; 
