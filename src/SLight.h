@@ -31,7 +31,7 @@ SColor SLight::apply(const SVertex& vertex) const
     SVector dir_to = ::normal(point - vecpos);
 
     float ambient  = 1.0f;
-    float diffuse  = fmax(0.0f, dot(dir_to, vertex.normal));
+    float diffuse  = fmax(0.0f, -dot(dir_to, vertex.normal));
     float specular = 0.0f; 
 
     float scale = dot(phong_ads, SVector{ ambient, diffuse, specular });

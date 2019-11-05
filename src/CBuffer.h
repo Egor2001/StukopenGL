@@ -12,7 +12,8 @@
 #include <cfloat>
 #include <vector>
 #include "math/SMatrixExt.h"
-#include "ShaderStructures.h"
+#include "SVertex.h"
+#include "SFragment.h"
 #include "memory/CIntrinsicAllocator.h"
 
 //test

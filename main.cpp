@@ -11,7 +11,7 @@
 #include "src/math/SVectorExt.h"
 #include "src/math/SMatrixExt.h"
 #include "src/math/SColorExt.h"
-#include "src/CRasterizer.h"
+#include "src/CFillRasterizer.h"
 #include "src/CScreen.h"
 #include "src/CBuffer.h"
 #include "src/CObject.h"
@@ -39,7 +39,6 @@ int main(int argc, char* argv[])
 
     SScene scene = 
     {
-        .object = CObject(),
         .matrix = SMatrixExt(),
 
         .camera = SCamera
@@ -51,23 +50,24 @@ int main(int argc, char* argv[])
 
         .light = SLight
         { 
-            .point = SVector{ 1.0f, 1.0f, 3.0f },
+            .point = SVector{ -2.5f, -1.0f, 0.0f },
             .color = SColor{ 1.0f, 1.0f, 0.0f },
             .phong_ads = SVector{ 0.125f, 0.250f, 0.625f },
             //.phong_ads = SVector{ 0.0f, 1.0f, 0.0f },
             .phong_pow = 16.0f
-        }
+        },
+
+        .projection = CPerspective(1.0f, 2.5f)
     };
 
-    scene.object.parse_from(obj_file, SColor{ 1.0f, 1.0f, 1.0f });
+    CObject object;
+    object.parse_from(obj_file, SColor{ 1.0f, 1.0f, 1.0f });
 
-    CPerspective projection = CPerspective(1.0f, 2.5f);
-    CRasterizer  rasterizer = CRasterizer(float(CBuffer::DIM_W), 
-                                          float(CBuffer::DIM_H));
     CScreen screen = CScreen();
 
-    CPipeline pipeline = CPipeline(std::move(rasterizer), 
-                                   std::move(projection));
+    auto pipeline = 
+        CPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
+                                   float(CBuffer::DIM_H));
 
     auto beg_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> seconds_elapsed;
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
                        SVectorExt(0.0f,      1.0f,       0.0f, 0.0f),
                        SVectorExt(sinf(ang), 0.0f,  cosf(ang), 0.0f));
 
-        pipeline.render_scene(scene);
+        pipeline.render_scene(scene, object);
         pipeline.flush_screen(screen);
         pipeline.clear_buffer();
 
