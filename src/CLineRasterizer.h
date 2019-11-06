@@ -20,9 +20,12 @@
 
 //namespace sgl {
 
+template<typename FC>
 class CLineRasterizer
 {
 public:
+    using TFragmentContainer = FC;
+
     CLineRasterizer(float max_x_set, float max_y_set):
         max_x_(max_x_set),
         max_y_(max_y_set)
@@ -31,37 +34,56 @@ public:
     float max_x() const noexcept { return max_x_; }
     float max_y() const noexcept { return max_y_; }
 
-    template<typename TContainer>
     void rasterize(const SVertex& beg_v, 
                    const SVertex& mid_v, 
-                   const SVertex& end_v, 
-                   TContainer& frag_container);
+                   const SVertex& end_v,
+                   TFragmentContainer& frag_buf);
 
 private:
-    template<typename TContainer>
+    void rast_face(const SVertex& beg_v, 
+                   const SVertex& mid_v, 
+                   const SVertex& end_v, 
+                   TFragmentContainer& frag_buf);
+
     void rast_line(const SVertex& beg_v, 
                    const SVertex& end_v, 
-                   TContainer& frag_container);
+                   TFragmentContainer& frag_buf);
 
     float max_x_;
     float max_y_;
 };
 
-template<typename TContainer>
-void CLineRasterizer::rasterize(const SVertex& beg_v, 
-                                const SVertex& mid_v, 
-                                const SVertex& end_v,
-                                TContainer& frag_container)
+template<typename FC>
+void 
+CLineRasterizer<FC>::
+rasterize(const SVertex& beg_v, 
+          const SVertex& mid_v, 
+          const SVertex& end_v,
+          TFragmentContainer& frag_buf)
 {
-    rast_line(beg_v, mid_v, frag_container);
-    rast_line(mid_v, end_v, frag_container);
-    rast_line(end_v, beg_v, frag_container);
+    rast_face(beg_v, mid_v, end_v, frag_buf);
 }
 
-template<typename TContainer>
-void CRasterizer::rast_line(const SVertex& beg_v, 
-                            const SVertex& end_v,
-                            TContainer& frag_container)
+template<typename FC>
+void 
+CLineRasterizer<FC>::
+rast_face(const SVertex& beg_v, 
+          const SVertex& mid_v, 
+          const SVertex& end_v,
+          TFragmentContainer& frag_buf)
+{
+    rast_line(beg_v, mid_v, frag_buf);
+    rast_line(mid_v, end_v, frag_buf);
+    rast_line(end_v, beg_v, frag_buf);
+}
+
+
+template<typename FC>
+void 
+CLineRasterizer<FC>::
+rast_line(const SVertex& beg_v, 
+          const SVertex& end_v,
+          TFragmentContainer& frag_buf)
 {
     SFragment beg_f = ::to_fragment(beg_v);
     SFragment end_f = ::to_fragment(end_v);
@@ -72,7 +94,7 @@ void CRasterizer::rast_line(const SVertex& beg_v,
     for (size_t cur_step = 0; cur_step < step_cnt; ++cur_step)
     {
         float ratio = (float(cur_step) / float(step_cnt));
-        frag_container.push_back(::interpolate(beg_f, end_f, ratio));
+        frag_buf.push_back(::interpolate(beg_f, end_f, ratio));
     }
 }
 
@@ -82,9 +104,8 @@ int test_CLineRasterizer()
     
     CScreen scr = CScreen();
     CBuffer buf = CBuffer();
-    CLineRasterizer rasterizer 
-        = CLineRasterizer(float(CBuffer::DIM_W),
-                          float(CBuffer::DIM_H));
+    auto rasterizer = CLineRasterizer<CIntrinsicVector<SFragment>>
+        (float(CBuffer::DIM_W), float(CBuffer::DIM_H));
 
     CIntrinsicVector<SFragment> frag_vec;
 

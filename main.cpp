@@ -12,6 +12,7 @@
 #include "src/math/SMatrixExt.h"
 #include "src/math/SColorExt.h"
 #include "src/CFillRasterizer.h"
+#include "src/CLineRasterizer.h"
 #include "src/CScreen.h"
 #include "src/CBuffer.h"
 #include "src/CObject.h"
@@ -20,6 +21,7 @@
 #include "src/SLight.h"
 #include "src/CPerspective.h"
 #include "src/CPipeline.h"
+#include "src/CParallelPipeline.h"
 
 int main(int argc, char* argv[])
 {
@@ -39,6 +41,9 @@ int main(int argc, char* argv[])
 
     SScene scene = 
     {
+        .dim_x = float(CBuffer::DIM_W),
+        .dim_y = float(CBuffer::DIM_H),
+
         .matrix = SMatrixExt(),
 
         .camera = SCamera
@@ -66,15 +71,15 @@ int main(int argc, char* argv[])
     CScreen screen = CScreen();
 
     auto pipeline = 
-        CPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
-                                   float(CBuffer::DIM_H));
+        CParallelPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
+                                           float(CBuffer::DIM_H));
 
     auto beg_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> seconds_elapsed;
 
     double sum_fps = 0.0f;
     size_t cnt = 0;
-    while (cnt < 100)
+    while (cnt < 1000)
     {
         beg_time = std::chrono::steady_clock::now();
 

@@ -13,6 +13,7 @@
 struct SScene
 {
 public:
+    float        dim_x, dim_y;
     SMatrixExt   matrix;
     SCamera      camera;
     SLight       light;

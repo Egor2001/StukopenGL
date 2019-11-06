@@ -10,8 +10,7 @@
 struct SVertexShader
 {
 public:
-    void init(const SScene& scene, 
-              float max_x, float max_y);
+    void init(const SScene& scene);
     void apply(SVertex& vertex) const;
     
     SMatrixExt modelview_mtx; 
@@ -20,13 +19,15 @@ public:
     SVector    eyepos;
 };
 
-void SVertexShader::init(const SScene& scene, 
-                         float max_x, float max_y)
+void SVertexShader::init(const SScene& scene)
 {
-    float side = fmin(max_x, max_y);
+    float side = fmin(scene.dim_x, scene.dim_y);
     
-    float xx = 0.5f*side;  float yy = -0.5f*side; 
-    float xw = 0.5f*max_x; float yw = 0.5f*max_y; 
+    float xx = 0.5f*side;  
+    float yy = -0.5f*side; 
+
+    float xw = 0.5f*scene.dim_x; 
+    float yw = 0.5f*scene.dim_y; 
 
     SMatrixExt buf_mtx = SMatrixExt(SVectorExt{ xx,   0.0f, 0.0f, xw },
                                     SVectorExt{ 0.0f, yy,   0.0f, yw },
@@ -36,7 +37,7 @@ void SVertexShader::init(const SScene& scene,
     projection_mtx = buf_mtx*scene.projection.get_matrix(); 
 
     light  = scene.light;
-    eyepos = scene.camera.pos;
+    eyepos = SVector{};//scene.camera.pos;
 }
 
 void SVertexShader::apply(SVertex& vertex) const
