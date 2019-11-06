@@ -22,6 +22,7 @@ class CPipeline
 {
 public:
     using TRasterizer = R;
+    using TFragContainer = typename TRasterizer::TFragmentContainer;
 
     using TVertShader = VS; 
     using TFragShader = FS; 
@@ -89,10 +90,10 @@ render_scene(const SScene& scene, const CObject& object)
     frag_shader_.init(scene, 
                       float(CBuffer::DIM_W), 
                       float(CBuffer::DIM_H));
-    for (auto& frag: frag_buf_)
+    for (auto& frag : frag_buf_)
         frag_shader_.apply(frag, vert_buf_);
 
-    buffer_.render(std::move(frag_buf_));
+    buffer_.render(frag_buf_);
     //must be fast (constant time) for trivial types
     //TODO: consider to move to clear() function
 

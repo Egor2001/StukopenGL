@@ -31,6 +31,12 @@ public:
 
     ~CThreadPool();
 
+    [[nodiscard]]
+    size_t thread_cnt() const noexcept
+    {
+        return thread_vec_.size(); 
+    }
+
     void push_task(const SFunctor& task);
     void push_task(SFunctor&& task);
 
