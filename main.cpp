@@ -18,20 +18,23 @@
 #include "src/CObject.h"
 #include "src/SCamera.h"
 #include "src/SVertexShader.h"
+#include "src/SFragmentShader.h"
 #include "src/SLight.h"
 #include "src/CPerspective.h"
 #include "src/CPipeline.h"
 #include "src/CParallelPipeline.h"
+#include "src/CTexture.h"
 
 int main(int argc, char* argv[])
 {
-    if (argc == 1 || argc > 2)
+    if (argc != 3)
     {
-        printf("Usage: %s OBJFILE \n", argv[0]);
+        printf("Usage: %s OBJFILE TEXFILE \n", argv[0]);
         return EXIT_FAILURE;
     }
 
     FILE* obj_file = fopen(argv[1], "r+");
+    FILE* tex_file = fopen(argv[2], "r+");
 
     if (!obj_file)
     {
@@ -62,7 +65,8 @@ int main(int argc, char* argv[])
             .phong_pow = 16.0f
         },
 
-        .projection = CPerspective(1.0f, 2.5f)
+        .projection = CPerspective(1.0f, 2.5f),
+        .texture = CTexture(tex_file)
     };
 
     CObject object;
@@ -70,9 +74,11 @@ int main(int argc, char* argv[])
 
     CScreen screen = CScreen();
 
+    auto vert_shader = SVertexShader(scene);
+    //auto frag_shader = SFragmentShader(scene);
     auto pipeline = 
-        CParallelPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
-                                           float(CBuffer::DIM_H));
+        CPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
+                                   float(CBuffer::DIM_H));
 
     auto beg_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> seconds_elapsed;
@@ -83,6 +89,19 @@ int main(int argc, char* argv[])
     {
         beg_time = std::chrono::steady_clock::now();
 
+        vert_shader = SVertexShader(scene);
+        //frag_shader = SFragmentShader(scene);
+        
+        auto frag_shader = [&scene](SFragment& frag, const auto& vert_buf)
+        {
+            const auto& tex_color = 
+                scene.texture.get_color(frag.tex_u, frag.tex_v);
+            
+            frag.color.r = float(tex_color.r)/255.0f;
+            frag.color.g = float(tex_color.g)/255.0f;
+            frag.color.b = float(tex_color.b)/255.0f;
+        };
+        
         ++cnt;
         float ang = float(cnt)*M_PI/180.0f;
         scene.matrix = 
@@ -90,7 +109,8 @@ int main(int argc, char* argv[])
                        SVectorExt(0.0f,      1.0f,       0.0f, 0.0f),
                        SVectorExt(sinf(ang), 0.0f,  cosf(ang), 0.0f));
 
-        pipeline.render_scene(scene, object);
+        pipeline.render_scene(object, vert_shader, frag_shader);
+
         pipeline.flush_screen(screen);
         pipeline.clear_buffer();
 
@@ -99,6 +119,12 @@ int main(int argc, char* argv[])
     }
 
     printf("average fps: %lg", sum_fps/double(cnt));
+    
+    if (tex_file)
+    {
+        fclose(tex_file);
+        tex_file = nullptr;
+    }
 
     if (obj_file)
     {

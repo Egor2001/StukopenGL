@@ -17,9 +17,7 @@
 
 //namespace sgl {
 
-template<template<typename> typename R, 
-         typename VS = SVertexShader, 
-         typename FS = SFragmentShader>
+template<template<typename> typename R>
 class CParallelPipeline
 {
 public:
@@ -29,15 +27,15 @@ public:
     using TFragmentContainer = CIntrinsicVector<SFragment>;
     using TRasterizer = R<TFragmentContainer>;
 
-    using TVertShader = VS; 
-    using TFragShader = FS; 
-
     template<typename... Types>
     explicit CParallelPipeline(Types&&... rasterizer_args);
 
     ~CParallelPipeline();
 
-    void render_scene(const SScene&, const CObject&);
+    template<typename VS, typename FS>
+    void render_scene(const CObject&, 
+                      const VS& vert_shader, const FS& frag_shader);
+
     void flush_screen(CScreen&);
     void clear_buffer();
 
@@ -48,51 +46,43 @@ private:
     TVertexContainer vert_buf_;
     std::vector<TFragmentContainer> frag_buf_vec_;
 
-    TVertShader vert_shader_;
-    TFragShader frag_shader_;
-
     TRasterizer rasterizer_;
     CBuffer     buffer_;
 };
 
-template<template<typename> typename R, 
-         typename VS, typename FS>
+template<template<typename> typename R>
 template<typename... Types>
-CParallelPipeline<R, VS, FS>::
+CParallelPipeline<R>::
 CParallelPipeline(Types&&... rasterizer_args):
 //    buffer_mutex_(),
     thread_pool_(std::make_shared<CThreadPool>(THREAD_CNT)),
     vert_buf_(),
     frag_buf_vec_(THREAD_CNT),
-    vert_shader_(), 
-    frag_shader_(),
     rasterizer_(std::forward<Types>(rasterizer_args)...),
     buffer_()
 {}
 
-template<template<typename> typename R, 
-         typename VS, typename FS>
-CParallelPipeline<R, VS, FS>::
+template<template<typename> typename R>
+CParallelPipeline<R>::
 ~CParallelPipeline()
 {}
 
-template<template<typename> typename R, 
-         typename VS, typename FS>
+template<template<typename> typename R>
+template<typename VS, typename FS>
 void 
-CParallelPipeline<R, VS, FS>::
-render_scene(const SScene& scene, const CObject& object)
+CParallelPipeline<R>::
+render_scene(const CObject& object, 
+             const VS& vert_shader, const FS& frag_shader)
 {
-    vert_shader_.init(scene);
-    frag_shader_.init(scene);
-
     for (const auto& vertex: object.vertex_buf())
         vert_buf_.push_back(vertex);
 
     for (auto& vert : vert_buf_)
-        vert_shader_.apply(vert);
+        vert_shader(vert);
 
     CLatch latch(THREAD_CNT+1);
-    auto render_task = [this, &scene, &object, &latch](size_t thread_idx)
+    auto render_task = [this, &vert_shader, &frag_shader, 
+                        &object, &latch](size_t thread_idx)
     {
         size_t index_buf_size = object.index_buf().size();
 
@@ -110,7 +100,7 @@ render_scene(const SScene& scene, const CObject& object)
         }
 
         for (auto& frag : frag_buf_vec_[thread_idx])
-            frag_shader_.apply(frag, vert_buf_);
+            frag_shader(frag, vert_buf_);
 
         latch.count_down_and_wait();
     };
@@ -130,10 +120,9 @@ render_scene(const SScene& scene, const CObject& object)
 }
 
 //TODO: use smart pointer instead of non-const reference
-template<template<typename> typename R, 
-         typename VS, typename FS>
+template<template<typename> typename R>
 void 
-CParallelPipeline<R, VS, FS>::
+CParallelPipeline<R>::
 flush_screen(CScreen& screen)
 {
 //    std::lock_guard<std::mutex> lock(buffer_mutex_);
@@ -142,10 +131,9 @@ flush_screen(CScreen& screen)
 }
 
 //TODO: to vary depth value
-template<template<typename> typename R, 
-         typename VS, typename FS>
+template<template<typename> typename R>
 void 
-CParallelPipeline<R, VS, FS>::
+CParallelPipeline<R>::
 clear_buffer()
 {
 //    std::lock_guard<std::mutex> lock(buffer_mutex_);

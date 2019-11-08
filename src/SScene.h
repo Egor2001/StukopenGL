@@ -5,7 +5,7 @@
 #include "SCamera.h"
 #include "SLight.h"
 #include "CPerspective.h"
-//#include "CTexture.h"
+#include "CTexture.h"
 
 //namespace sgl {
 
@@ -18,7 +18,7 @@ public:
     SCamera      camera;
     SLight       light;
     CPerspective projection;
-    //CTexture texture;
+    CTexture texture;
 };
 
 //} //namespace sgl

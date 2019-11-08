@@ -10,8 +10,8 @@
 struct SVertexShader
 {
 public:
-    void init(const SScene& scene);
-    void apply(SVertex& vertex) const;
+    explicit SVertexShader(const SScene& scene);
+    void operator () (SVertex& vertex) const;
     
     SMatrixExt modelview_mtx; 
     SMatrixExt projection_mtx; 
@@ -19,7 +19,7 @@ public:
     SVector    eyepos;
 };
 
-void SVertexShader::init(const SScene& scene)
+SVertexShader::SVertexShader(const SScene& scene)
 {
     float side = fmin(scene.dim_x, scene.dim_y);
     
@@ -40,7 +40,7 @@ void SVertexShader::init(const SScene& scene)
     eyepos = SVector{};//scene.camera.pos;
 }
 
-void SVertexShader::apply(SVertex& vertex) const
+void SVertexShader::operator () (SVertex& vertex) const
 {
     vertex.point  = modelview_mtx*vertex.point; 
     vertex.normal = ::normal(modelview_mtx*vertex.normal); 

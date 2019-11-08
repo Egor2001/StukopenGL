@@ -4,6 +4,7 @@
 #include <immintrin.h>
 
 //color
+#include <cmath>
 #include <cfloat>
 #include "SColor.h"
 

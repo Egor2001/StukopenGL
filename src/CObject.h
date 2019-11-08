@@ -92,6 +92,8 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
 
     std::vector<SVectorExt> vector_temp_buf;
     std::vector<SVector>    normal_temp_buf;
+    std::vector<float>      tex_u_temp_buf;
+    std::vector<float>      tex_v_temp_buf;
 
     if (!obj_file)
         result = false;
@@ -142,6 +144,16 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
 
                         normal_temp_buf.push_back(cur_normal);
                     }
+                    else if (*it == 't' && isspace(*(++it)))
+                    {
+                        float cur_tex_u = 0.0f;
+                        float cur_tex_v = 0.0f;
+
+                        sscanf(it, "%f %f", &cur_tex_u, &cur_tex_v);
+
+                        tex_u_temp_buf.push_back(cur_tex_u);
+                        tex_v_temp_buf.push_back(cur_tex_v);
+                    }
                 } 
                 break;
 
@@ -152,10 +164,11 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
                     {
                         auto vector_idx_vec = std::vector<size_t>(); 
                         auto normal_idx_vec = std::vector<size_t>();
+                        auto tex_idx_vec    = std::vector<size_t>();
 
                         size_t cur_i = 0;
-                        int is_scanned = 2;
-                        for (cur_i = 0; *it && (is_scanned == 2); ++cur_i)
+                        int is_scanned = 3;
+                        for (cur_i = 0; *it && (is_scanned == 3); ++cur_i)
                         {
                             while (std::isspace(*it)) ++it;
                             if (!(*it)) 
@@ -163,14 +176,17 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
 
                             size_t cur_vector_idx = 0;
                             size_t cur_normal_idx = 0;
-                            is_scanned = sscanf(it, "%lu/%*u/%lu",
+                            size_t cur_tex_idx = 0;
+                            is_scanned = sscanf(it, "%zu/%zu/%zu",
                                                 &cur_vector_idx,
+                                                &cur_tex_idx,
                                                 &cur_normal_idx);
 
-                            if (is_scanned == 2)
+                            if (is_scanned == 3)
                             {
                                 vector_idx_vec.push_back(cur_vector_idx);
                                 normal_idx_vec.push_back(cur_normal_idx);
+                                tex_idx_vec   .push_back(cur_tex_idx);
                             }
                             else
                                 break;
@@ -187,8 +203,12 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
 
                             size_t cur_vector_idx = vector_idx_vec[cur_i]-1; 
                             size_t cur_normal_idx = normal_idx_vec[cur_i]-1;
+                            size_t cur_tex_idx    = tex_idx_vec   [cur_i]-1;
+
                             cur_vertex.point  = vector_temp_buf[cur_vector_idx];
                             cur_vertex.normal = normal_temp_buf[cur_normal_idx];
+                            cur_vertex.tex_u  = tex_u_temp_buf [cur_tex_idx];
+                            cur_vertex.tex_v  = tex_v_temp_buf [cur_tex_idx];
                             cur_vertex.color = color_set;
 
                             cur_index_vec.push_back(vertex_buf_.size());
