@@ -24,6 +24,7 @@
 #include "src/CPipeline.h"
 #include "src/CParallelPipeline.h"
 #include "src/CTexture.h"
+#include "src/CCullFace.h"
 
 int main(int argc, char* argv[])
 {
@@ -51,21 +52,22 @@ int main(int argc, char* argv[])
 
         .camera = SCamera
         {
-            .pos = SVector{ 0.0f, 1.0f, 2.0f },
-            .dir = SVector{ 0.0f, 0.0f, -2.0f },
+            .pos = SVector{ 0.0f, 1.0f, 3.0f },
+//            .pos = SVector{ 0.0f, 0.0f, 0.0f },
+            .dir = SVector{ 0.0f, 1.0f, 3.0f },
             .up  = SVector{ 0.0f, 1.0f, 0.0f }
         },
 
         .light = SLight
         { 
             .point = SVector{ -2.5f, -1.0f, 0.0f },
-            .color = SColor{ 1.0f, 1.0f, 0.0f },
+            .color = SColor{ 1.0f, 1.0f, 1.0f },
             .phong_ads = SVector{ 0.125f, 0.250f, 0.625f },
             //.phong_ads = SVector{ 0.0f, 1.0f, 0.0f },
             .phong_pow = 16.0f
         },
 
-        .projection = CPerspective(1.0f, 2.5f),
+        .projection = CPerspective(1.0f, 16.0f),
         .texture = CTexture(tex_file)
     };
 
@@ -73,9 +75,9 @@ int main(int argc, char* argv[])
     object.parse_from(obj_file, SColor{ 1.0f, 1.0f, 1.0f });
 
     CScreen screen = CScreen();
+    
+    auto cull_face_side = CCullFace<SGL_CULL_FRONT>();
 
-    auto vert_shader = SVertexShader(scene);
-    //auto frag_shader = SFragmentShader(scene);
     auto pipeline = 
         CPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
                                    float(CBuffer::DIM_H));
@@ -89,18 +91,23 @@ int main(int argc, char* argv[])
     {
         beg_time = std::chrono::steady_clock::now();
 
-        vert_shader = SVertexShader(scene);
-        //frag_shader = SFragmentShader(scene);
-        
+        auto vert_shader = SVertexShader(scene);
         auto frag_shader = [&scene](SFragment& frag, const auto& vert_buf)
         {
-            const auto& tex_color = 
-                scene.texture.get_color(frag.tex_u, frag.tex_v);
-            
-            frag.color.r = float(tex_color.r)/255.0f;
-            frag.color.g = float(tex_color.g)/255.0f;
-            frag.color.b = float(tex_color.b)/255.0f;
+            frag.color *= 
+                scene.texture.get_color(frag.tex_u, 1.0f - frag.tex_v);
         };
+
+        auto cull_face = 
+            [&cull_face_side]
+            (const SVertex& beg_v, const SVertex& mid_v, const SVertex& end_v) 
+             -> bool
+            {
+                return (beg_v.point.z > -4.0f && 
+                        mid_v.point.z > -4.0f && 
+                        end_v.point.z > -4.0f) || 
+                        false;//cull_face_side(beg_v, mid_v, end_v);
+            };
         
         ++cnt;
         float ang = float(cnt)*M_PI/180.0f;
@@ -109,12 +116,12 @@ int main(int argc, char* argv[])
                        SVectorExt(0.0f,      1.0f,       0.0f, 0.0f),
                        SVectorExt(sinf(ang), 0.0f,  cosf(ang), 0.0f));
 
-        pipeline.render_scene(object, vert_shader, frag_shader);
+        pipeline.render_scene(object, vert_shader, frag_shader, cull_face);
 
         pipeline.flush_screen(screen);
         pipeline.clear_buffer();
 
-        seconds_elapsed = (beg_time - std::chrono::steady_clock::now());
+        seconds_elapsed = std::chrono::steady_clock::now() - beg_time;
         sum_fps += 1.0/seconds_elapsed.count();
     }
 

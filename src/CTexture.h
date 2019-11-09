@@ -32,7 +32,7 @@ public:
     size_t           byte_size() const noexcept;
     const STexColor* data()      const noexcept;
 
-    const STexColor& get_color(float tex_u, float tex_v) const noexcept;
+    SColor get_color(float tex_u, float tex_v) const noexcept;
 
 private:
     void cleanup_() noexcept;
@@ -125,13 +125,15 @@ CTexture::data() const noexcept
 }
 
 //TODO: to optimize it 
-const CTexture::STexColor& 
-CTexture::get_color(float tex_u, float tex_v) const noexcept
+SColor CTexture::get_color(float tex_u, float tex_v) const noexcept
 {
     size_t u = size_t(float(dim_w_)*fmax(0.0f, fmin(tex_u, 1.0f)));
     size_t v = size_t(float(dim_h_)*fmax(0.0f, fmin(tex_v, 1.0f)));
+    size_t idx = dim_w_*v + u;
 
-    return data_[dim_w_*v + u];
+    return SColor{ float(data_[idx].b)/255,
+                   float(data_[idx].g)/255, 
+                   float(data_[idx].r)/255 };
 }
 
 void CTexture::cleanup_() noexcept

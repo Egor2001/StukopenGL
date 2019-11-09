@@ -108,20 +108,29 @@ fill_half(const SFragment& beg_f,
           const SFragment& top_f,
           TFragmentContainer& frag_buf)
 {
-    float length = fabs(top_f.point.y - beg_f.point.y);
+    SFragment top_beg = top_f;
+    SFragment top_end = top_f;
+    SFragment beg_clamped = beg_f;
+    SFragment end_clamped = end_f;
+
+    ::clamp_y(beg_clamped, top_beg, 0.0f, max_y_);
+    ::clamp_y(end_clamped, top_end, 0.0f, max_y_);
+
+    float length = fmax(fabs(top_beg.point.y - beg_clamped.point.y),
+                        fabs(top_end.point.y - end_clamped.point.y));
     size_t step_cnt = size_t(ceilf(length));
     
     if (length < 0.5f)
     {
-        fill_xseq(beg_f, end_f, frag_buf);
+        fill_xseq(beg_clamped, end_clamped, frag_buf);
     }
     else
     {
         for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
         {
             float ratio = float(cur_step)/length;
-            fill_xseq(::interpolate(top_f, beg_f, ratio), 
-                      ::interpolate(top_f, end_f, ratio),
+            fill_xseq(::interpolate(top_beg, beg_clamped, ratio), 
+                      ::interpolate(top_end, end_clamped, ratio),
                       frag_buf);
         }
     }
@@ -134,19 +143,23 @@ fill_xseq(const SFragment& beg_f,
           const SFragment& end_f,
           TFragmentContainer& frag_buf)
 {
-    float length = fabs(beg_f.point.x - end_f.point.x);
+    SFragment beg_clamped = beg_f; 
+    SFragment end_clamped = end_f; 
+    ::clamp_x(beg_clamped, end_clamped, 0.0f, max_x_);
+
+    float length = fabs(beg_clamped.point.x - end_clamped.point.x);
     size_t step_cnt = size_t(ceilf(length));
 
     if (length < 0.5f)
     {
-        frag_buf.push_back(::interpolate(beg_f, end_f, 0.5f));
+        frag_buf.push_back(::interpolate(beg_clamped, end_clamped, 0.5f));
     }
     else
     {
         for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
         {
             float ratio = float(cur_step)/length;
-            frag_buf.push_back(::interpolate(beg_f, end_f, ratio));
+            frag_buf.push_back(::interpolate(beg_clamped, end_clamped, ratio));
         }
     }
 }

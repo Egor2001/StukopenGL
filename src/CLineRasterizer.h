@@ -88,6 +88,9 @@ rast_line(const SVertex& beg_v,
     SFragment beg_f = ::to_fragment(beg_v);
     SFragment end_f = ::to_fragment(end_v);
 
+    ::clamp_x(beg_f, end_f, 0.0f, max_x_);
+    ::clamp_y(beg_f, end_f, 0.0f, max_y_);
+
     size_t step_cnt = std::max(size_t(fabs(end_f.point.x - beg_f.point.x)),
                                size_t(fabs(end_f.point.y - beg_f.point.y)));
 

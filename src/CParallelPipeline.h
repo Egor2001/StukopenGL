@@ -32,9 +32,10 @@ public:
 
     ~CParallelPipeline();
 
-    template<typename VS, typename FS>
+    template<typename VS, typename FS, typename CF>
     void render_scene(const CObject&, 
-                      const VS& vert_shader, const FS& frag_shader);
+                      const VS& vert_shader, const FS& frag_shader,
+                      const CF& cull_face);
 
     void flush_screen(CScreen&);
     void clear_buffer();
@@ -68,11 +69,12 @@ CParallelPipeline<R>::
 {}
 
 template<template<typename> typename R>
-template<typename VS, typename FS>
+template<typename VS, typename FS, typename CF>
 void 
 CParallelPipeline<R>::
 render_scene(const CObject& object, 
-             const VS& vert_shader, const FS& frag_shader)
+             const VS& vert_shader, const FS& frag_shader,
+             const CF& cull_face)
 {
     for (const auto& vertex: object.vertex_buf())
         vert_buf_.push_back(vertex);
@@ -81,7 +83,7 @@ render_scene(const CObject& object,
         vert_shader(vert);
 
     CLatch latch(THREAD_CNT+1);
-    auto render_task = [this, &vert_shader, &frag_shader, 
+    auto render_task = [this, &vert_shader, &frag_shader, &cull_face, 
                         &object, &latch](size_t thread_idx)
     {
         size_t index_buf_size = object.index_buf().size();
@@ -96,7 +98,8 @@ render_scene(const CObject& object,
             rasterizer_.rasterize(vert_buf_[it->arr[0]],
                                   vert_buf_[it->arr[1]],
                                   vert_buf_[it->arr[2]], 
-                                  frag_buf_vec_[thread_idx]);
+                                  frag_buf_vec_[thread_idx],
+                                  cull_face);
         }
 
         for (auto& frag : frag_buf_vec_[thread_idx])

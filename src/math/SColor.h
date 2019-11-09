@@ -9,6 +9,10 @@
 struct SColor;
 
 SColor interpolate(const SColor& beg_c, const SColor& end_c, float ratio);
+
+SColor& operator *= (SColor& color, float ratio);
+SColor& operator *= (SColor& color, const SColor& mul);
+
 SColor operator * (const SColor& color, float ratio);
 SColor operator * (const SColor& lhs, const SColor& rhs);
 
@@ -26,6 +30,24 @@ SColor interpolate(const SColor& beg_c, const SColor& end_c, float ratio)
     result.b = beg_c.b*(1.0f - ratio) + end_c.b*ratio;
 
     return result;
+}
+
+SColor& operator *= (SColor& color, float ratio)
+{
+    color.r *= ratio;
+    color.g *= ratio;
+    color.b *= ratio;
+
+    return color;
+}
+
+SColor& operator *= (SColor& color, const SColor& mul)
+{
+    color.r *= mul.r;
+    color.g *= mul.g;
+    color.b *= mul.b;
+
+    return color;
 }
 
 SColor operator * (const SColor& color, float ratio)

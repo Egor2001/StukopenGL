@@ -28,8 +28,8 @@ public:
 
     ~CPipeline();
 
-    template<typename VS, typename FS>
-    void render_scene(const CObject&, const VS&, const FS&);
+    template<typename VS, typename FS, typename CF>
+    void render_scene(const CObject&, const VS&, const FS&, const CF&);
     void flush_screen(CScreen&);
     void clear_buffer();
 
@@ -61,11 +61,12 @@ CPipeline<R>::
 }
 
 template<template<typename> typename R>
-template<typename VS, typename FS>
+template<typename VS, typename FS, typename CF>
 void 
 CPipeline<R>::
 render_scene(const CObject& object, 
-             const VS& vert_shader, const FS& frag_shader)
+             const VS& vert_shader, const FS& frag_shader,
+             const CF& cull_face)
 {
     for (const auto& vertex: object.vertex_buf())
         vert_buf_.push_back(vertex);
@@ -75,6 +76,13 @@ render_scene(const CObject& object,
 
     for (auto& index : object.index_buf())
     {
+        if (cull_face(vert_buf_[index.arr[0]],
+                      vert_buf_[index.arr[1]],
+                      vert_buf_[index.arr[2]]))
+        {
+            continue;
+        }
+
         rasterizer_.rasterize(vert_buf_[index.arr[0]],
                               vert_buf_[index.arr[1]],
                               vert_buf_[index.arr[2]], 

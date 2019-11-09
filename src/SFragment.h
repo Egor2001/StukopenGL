@@ -17,6 +17,9 @@ SFragment to_fragment(const SVertex& vertex);
 SFragment interpolate(const SFragment& beg, const SFragment& end, 
                       float ratio);
 
+void clamp_x(SFragment& beg, SFragment& end, float min_x, float max_x);
+void clamp_y(SFragment& beg, SFragment& end, float min_y, float max_y);
+
 struct alignas(32) SFragment
 {
     SFragment():
@@ -71,6 +74,48 @@ SFragment interpolate(const SFragment& beg, const SFragment& end,
                                        _mm256_mul_ps(_mm256_sub_ps(end.as_ymm,
                                                                    beg.as_ymm),
                                                      _mm256_set1_ps(ratio))));
+    }
+}
+
+void clamp_x(SFragment& beg, SFragment& end,
+             float min_x, float max_x)
+{
+    if (beg.point.x < min_x && end.point.x < min_x) 
+        beg.point.x = end.point.x = min_x;
+
+    if (beg.point.x > max_x && end.point.x > max_x)
+        beg.point.x = end.point.x = max_x;
+
+    if (fabs(end.point.x - beg.point.x) > FLT_EPSILON)
+    {
+        float x_scale = 1.0f/(end.point.x - beg.point.x);
+
+        beg = interpolate(end, beg, 
+                (end.point.x - fmax(0.0f, fmin(beg.point.x, max_x)))*x_scale);
+        
+        end = interpolate(beg, end, 
+                (fmax(0.0f, fmin(end.point.x, max_x)) - beg.point.x)*x_scale);
+    }
+}
+
+void clamp_y(SFragment& beg, SFragment& end,
+             float min_y, float max_y)
+{
+    if (beg.point.y < min_y && end.point.y < min_y) 
+        beg.point.y = end.point.y = min_y;
+
+    if (beg.point.y > max_y && end.point.y > max_y)
+        beg.point.y = end.point.y = max_y;
+
+    if (fabs(end.point.y - beg.point.y) > FLT_EPSILON)
+    {
+        float x_scale = 1.0f/(end.point.y - beg.point.y);
+
+        beg = interpolate(end, beg, 
+                (end.point.y - fmax(0.0f, fmin(beg.point.y, max_y)))*x_scale);
+        
+        end = interpolate(beg, end, 
+                (fmax(0.0f, fmin(end.point.y, max_y)) - beg.point.y)*x_scale);
     }
 }
 

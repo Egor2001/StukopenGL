@@ -35,8 +35,8 @@ private:
 };
 
 CPerspective::CPerspective(float near_set, float far_set):
-    near_(-near_set),
-    far_ (-far_set)
+    near_(near_set),
+    far_ (far_set)
 {}
 
 CPerspective::CPerspective(const CPerspective& copy_perspective):
@@ -72,7 +72,7 @@ CPerspective::~CPerspective()
 
 SMatrixExt CPerspective::get_matrix() const
 {
-    float mat33 = -(far_ + near_)/(far_ - near_);
+    float mat33 =  (far_ + near_)/(far_ - near_);
     float mat34 = -(2*far_*near_)/(far_ - near_);
 
     SMatrixExt result = SMatrixExt(SVectorExt(near_, 0.0f, 0.0f, 0.0f),
