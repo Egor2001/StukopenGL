@@ -36,10 +36,15 @@ public:
                          (mid_v.point.x*end_v.point.w - 
                           end_v.point.x*mid_v.point.w); 
 
+            if (beg_v.point.w < 0.0f || 
+                mid_v.point.w < 0.0f || 
+                end_v.point.w < 0.0f)
+                result = true;
+
             if constexpr (CULL_TYPE == ECullType::SGL_CULL_BACK)
-                result = (area < 0.0f);
+                result |= (area < 0.0f);
             else if constexpr (CULL_TYPE == ECullType::SGL_CULL_FRONT)
-                result = (area > 0.0f);
+                result |= (area > 0.0f);
         }
 
         return result; 

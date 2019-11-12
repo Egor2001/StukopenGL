@@ -1,11 +1,9 @@
 #ifndef SGL_SSCENE_H
 #define SGL_SSCENE_H
 
-#include "math/SMatrixExt.h"
 #include "SCamera.h"
 #include "SLight.h"
 #include "CPerspective.h"
-#include "CTexture.h"
 
 //namespace sgl {
 
@@ -14,11 +12,9 @@ struct SScene
 {
 public:
     float        dim_x, dim_y;
-    SMatrixExt   matrix;
     SCamera      camera;
     SLight       light;
     CPerspective projection;
-    CTexture texture;
 };
 
 //} //namespace sgl

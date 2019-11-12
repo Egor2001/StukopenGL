@@ -93,8 +93,6 @@ render_scene(const CObject& object,
         frag_shader(frag, vert_buf_);
 
     buffer_.render(frag_buf_);
-    //must be fast (constant time) for trivial types
-    //TODO: consider to move to clear() function
 
     frag_buf_.clear();
     vert_buf_.clear();

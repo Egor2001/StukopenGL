@@ -33,7 +33,7 @@ SVertexShader::SVertexShader(const SScene& scene)
                                     SVectorExt{ 0.0f, yy,   0.0f, yw },
                                     SVectorExt{ 0.0f, 0.0f, 1.0f, 0.0f});
 
-    modelview_mtx  = scene.camera.get_matrix()*scene.matrix; 
+    modelview_mtx  = scene.camera.get_matrix(); 
     projection_mtx = buf_mtx*scene.projection.get_matrix(); 
 
     light  = scene.light;

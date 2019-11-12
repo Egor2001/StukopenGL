@@ -26,33 +26,42 @@
 #include "src/CTexture.h"
 #include "src/CCullFace.h"
 
+#define SGL_INIT_RESOURCE_FILE(SGL_ARG_NAME, SGL_ARG_PATH) \
+    FILE* SGL_ARG_NAME = fopen(SGL_ARG_PATH, "r+"); \
+    if (!SGL_ARG_NAME) \
+    { \
+        perror("error opening resource file " #SGL_ARG_NAME ": "); \
+        return EXIT_FAILURE; \
+    }
+
+#define SGL_CLOSE_RESOURCE_FILE(SGL_ARG_NAME) \
+    if (!SGL_ARG_NAME) \
+    { \
+        fclose(SGL_ARG_NAME); \
+        SGL_ARG_NAME = nullptr; \
+    }
+
 int main(int argc, char* argv[])
 {
-    if (argc != 3)
+    if (argc != 5)
     {
         printf("Usage: %s OBJFILE TEXFILE \n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    FILE* obj_file = fopen(argv[1], "r+");
-    FILE* tex_file = fopen(argv[2], "r+");
-
-    if (!obj_file)
-    {
-        perror("error opening .obj file: ");
-        return EXIT_FAILURE;
-    }
+    SGL_INIT_RESOURCE_FILE(obj_file_plane, argv[1]);
+    SGL_INIT_RESOURCE_FILE(tex_file_plane, argv[2]);
+    SGL_INIT_RESOURCE_FILE(obj_file_sky,   argv[3]);
+    SGL_INIT_RESOURCE_FILE(tex_file_sky,   argv[4]);
 
     SScene scene = 
     {
         .dim_x = float(CBuffer::DIM_W),
         .dim_y = float(CBuffer::DIM_H),
 
-        .matrix = SMatrixExt(),
-
         .camera = SCamera
         {
-            .pos = SVector{ 0.0f, 1.0f, 3.0f },
+            .pos = SVector{ 0.0f, 5.0f, 15.0f },
 //            .pos = SVector{ 0.0f, 0.0f, 0.0f },
             .dir = SVector{ 0.0f, 1.0f, 3.0f },
             .up  = SVector{ 0.0f, 1.0f, 0.0f }
@@ -67,61 +76,98 @@ int main(int argc, char* argv[])
             .phong_pow = 16.0f
         },
 
-        .projection = CPerspective(1.0f, 16.0f),
-        .texture = CTexture(tex_file)
+        .projection = CPerspective(1.0f, 2.0f),
     };
 
-    CObject object;
-    object.parse_from(obj_file, SColor{ 1.0f, 1.0f, 1.0f });
+    float side = fmin(scene.dim_x, scene.dim_y);
+    
+    float xx = 0.5f*side;  
+    float yy = -0.5f*side; 
+
+    float xw = 0.5f*scene.dim_x; 
+    float yw = 0.5f*scene.dim_y; 
+
+    SMatrixExt view_mtx = SMatrixExt(SVectorExt{ xx,   0.0f, 0.0f, xw },
+                                     SVectorExt{ 0.0f, yy,   0.0f, yw },
+                                     SVectorExt{ 0.0f, 0.0f, 1.0f, 0.0f});
+
+    CObject object_plane;
+    CTexture texture_plane(tex_file_plane);
+    object_plane.parse_from(obj_file_plane, SColor{ 1.0f, 1.0f, 1.0f });
+
+    CObject object_sky;
+    CTexture texture_sky(tex_file_sky);
+    object_sky.parse_from(obj_file_sky, SColor{ 1.0f, 1.0f, 1.0f });
+
+    auto cull_face_plane = CCullFace<SGL_CULL_BACK>();
+    auto cull_face_sky   = CCullFace<SGL_CULL_FRONT>();
+
+    auto frag_shader_plane = [&texture_plane]
+    (SFragment& frag, const auto& vert_buf)
+    {
+        frag.color *= 
+            texture_plane.get_color(frag.tex_u, 1.0f - frag.tex_v);
+    };
+
+    auto frag_shader_sky = [&texture_sky]
+    (SFragment& frag, const auto& vert_buf)
+    {
+        frag.color = 
+            texture_sky.get_color(frag.tex_u, 1.0f - frag.tex_v);
+    };
+
+    auto pipeline = CPipeline<CFillRasterizer>(scene.dim_x, scene.dim_y); 
 
     CScreen screen = CScreen();
-    
-    auto cull_face_side = CCullFace<SGL_CULL_BACK>();
-
-    auto pipeline = 
-        CPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
-                                   float(CBuffer::DIM_H));
 
     auto beg_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> seconds_elapsed;
-
-    float scale = 1.0f;
-    SMatrixExt scale_mtx = SMatrixExt(SVectorExt{ scale, 0.0f, 0.0f, 0.0f },
-                                      SVectorExt{ 0.0f, scale, 0.0f, 0.0f },
-                                      SVectorExt{ 0.0f, 0.0f, scale, 0.0f });
 
     double sum_fps = 0.0f;
     size_t cnt = 0;
     while (cnt < 1000)
     {
         beg_time = std::chrono::steady_clock::now();
-
-        auto vert_shader = SVertexShader(scene);
-        auto frag_shader = [&scene](SFragment& frag, const auto& vert_buf)
-        {
-            frag.color *= 
-                scene.texture.get_color(frag.tex_u, 1.0f - frag.tex_v);
-        };
-
-        auto cull_face = 
-            [&cull_face_side]
-            (const SVertex& beg_v, const SVertex& mid_v, const SVertex& end_v) 
-             -> bool
-            {
-                return (/*beg_v.point.z > 2.0f ||*/ beg_v.point.z < -2.0f || 
-                        /*mid_v.point.z > 2.0f ||*/ mid_v.point.z < -2.0f ||
-                        /*end_v.point.z > 2.0f ||*/ end_v.point.z < -2.0f) ||
-                        cull_face_side(beg_v, mid_v, end_v);
-            };
         
         ++cnt;
         float ang = float(cnt)*M_PI/180.0f;
-        scene.matrix = scale_mtx * 
+        SMatrixExt model_mtx = 
             SMatrixExt(SVectorExt(cosf(ang), 0.0f, -sinf(ang), 0.0f),
                        SVectorExt(0.0f,      1.0f,       0.0f, 0.0f),
                        SVectorExt(sinf(ang), 0.0f,  cosf(ang), 0.0f));
 
-        pipeline.render_scene(object, vert_shader, frag_shader, cull_face);
+        SMatrixExt camera_mtx = scene.camera.get_matrix();
+        SMatrixExt viewport_mtx = view_mtx*scene.projection.get_matrix();
+
+        SMatrixExt plane_mtx = camera_mtx*model_mtx; 
+        auto vert_shader_plane = 
+            [&scene, &plane_mtx, &viewport_mtx]
+        (SVertex& vertex)
+        {
+            vertex.point  = plane_mtx*vertex.point; 
+            vertex.normal = ::normal(plane_mtx*vertex.normal); 
+            vertex.color  = scene.light.apply(vertex, SVector{});
+            vertex.point  = viewport_mtx*vertex.point; 
+        };
+
+        float scale_sky = 100.0f;
+        auto vert_shader_sky = 
+            [&scene, &scale_sky, &camera_mtx, &viewport_mtx]
+        (SVertex& vertex)
+        {
+            vertex.point  = camera_mtx*(vertex.point*scale_sky); 
+            vertex.normal = ::normal(camera_mtx*vertex.normal); 
+            //vertex.color  = vertex.color;
+            vertex.point  = viewport_mtx*vertex.point; 
+        };
+
+        pipeline.render_scene(object_sky, 
+                              vert_shader_sky, frag_shader_sky, 
+                              cull_face_sky);
+
+        pipeline.render_scene(object_plane, 
+                              vert_shader_plane, frag_shader_plane, 
+                              cull_face_plane);
 
         pipeline.flush_screen(screen);
         pipeline.clear_buffer();
@@ -132,18 +178,13 @@ int main(int argc, char* argv[])
 
     printf("average fps: %lg", sum_fps/double(cnt));
     
-    if (tex_file)
-    {
-        fclose(tex_file);
-        tex_file = nullptr;
-    }
-
-    if (obj_file)
-    {
-        fclose(obj_file);
-        obj_file = nullptr;
-    }
+    SGL_CLOSE_RESOURCE_FILE(obj_file_plane);
+    SGL_CLOSE_RESOURCE_FILE(tex_file_plane);
+    SGL_CLOSE_RESOURCE_FILE(obj_file_sky);
+    SGL_CLOSE_RESOURCE_FILE(tex_file_sky);
 
     return 0;
 }
 
+#undef SGL_INIT_RESOURCE_FILE
+#undef SGL_CLOSE_RESOURCE_FILE

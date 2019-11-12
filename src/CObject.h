@@ -209,7 +209,7 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
                             cur_vertex.normal = normal_temp_buf[cur_normal_idx];
                             cur_vertex.tex_u  = tex_u_temp_buf [cur_tex_idx];
                             cur_vertex.tex_v  = tex_v_temp_buf [cur_tex_idx];
-                            cur_vertex.color = color_set;
+                            cur_vertex.color  = color_set;
 
                             cur_index_vec.push_back(vertex_buf_.size());
                             vertex_buf_.push_back(cur_vertex);
