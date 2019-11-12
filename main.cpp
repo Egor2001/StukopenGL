@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 
     CScreen screen = CScreen();
     
-    auto cull_face_side = CCullFace<SGL_CULL_FRONT>();
+    auto cull_face_side = CCullFace<SGL_CULL_BACK>();
 
     auto pipeline = 
         CPipeline<CFillRasterizer>(float(CBuffer::DIM_W), 
@@ -84,6 +84,11 @@ int main(int argc, char* argv[])
 
     auto beg_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> seconds_elapsed;
+
+    float scale = 1.0f;
+    SMatrixExt scale_mtx = SMatrixExt(SVectorExt{ scale, 0.0f, 0.0f, 0.0f },
+                                      SVectorExt{ 0.0f, scale, 0.0f, 0.0f },
+                                      SVectorExt{ 0.0f, 0.0f, scale, 0.0f });
 
     double sum_fps = 0.0f;
     size_t cnt = 0;
@@ -103,15 +108,15 @@ int main(int argc, char* argv[])
             (const SVertex& beg_v, const SVertex& mid_v, const SVertex& end_v) 
              -> bool
             {
-                return (beg_v.point.z > -4.0f && 
-                        mid_v.point.z > -4.0f && 
-                        end_v.point.z > -4.0f) || 
-                        false;//cull_face_side(beg_v, mid_v, end_v);
+                return (/*beg_v.point.z > 2.0f ||*/ beg_v.point.z < -2.0f || 
+                        /*mid_v.point.z > 2.0f ||*/ mid_v.point.z < -2.0f ||
+                        /*end_v.point.z > 2.0f ||*/ end_v.point.z < -2.0f);// ||
+                        //cull_face_side(beg_v, mid_v, end_v);
             };
         
         ++cnt;
         float ang = float(cnt)*M_PI/180.0f;
-        scene.matrix = 
+        scene.matrix = scale_mtx * 
             SMatrixExt(SVectorExt(cosf(ang), 0.0f, -sinf(ang), 0.0f),
                        SVectorExt(0.0f,      1.0f,       0.0f, 0.0f),
                        SVectorExt(sinf(ang), 0.0f,  cosf(ang), 0.0f));
