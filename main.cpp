@@ -110,8 +110,8 @@ int main(int argc, char* argv[])
             {
                 return (/*beg_v.point.z > 2.0f ||*/ beg_v.point.z < -2.0f || 
                         /*mid_v.point.z > 2.0f ||*/ mid_v.point.z < -2.0f ||
-                        /*end_v.point.z > 2.0f ||*/ end_v.point.z < -2.0f);// ||
-                        //cull_face_side(beg_v, mid_v, end_v);
+                        /*end_v.point.z > 2.0f ||*/ end_v.point.z < -2.0f) ||
+                        cull_face_side(beg_v, mid_v, end_v);
             };
         
         ++cnt;

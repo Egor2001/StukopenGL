@@ -27,10 +27,14 @@ public:
         //implemented this way to avoid extra computations in case of disable
         if constexpr (CULL_TYPE != ECullType::SGL_CULL_DISABLED)
         {
-            float area = (beg_v.point.x - mid_v.point.x)*
-                         (mid_v.point.y - end_v.point.y) -  
-                         (beg_v.point.y - mid_v.point.y)*
-                         (mid_v.point.x - end_v.point.x); 
+            float area = (beg_v.point.x*mid_v.point.w - 
+                          mid_v.point.x*beg_v.point.w)*
+                         (mid_v.point.y*end_v.point.w - 
+                          end_v.point.y*mid_v.point.w) -  
+                         (beg_v.point.y*mid_v.point.w - 
+                          mid_v.point.y*beg_v.point.w)*
+                         (mid_v.point.x*end_v.point.w - 
+                          end_v.point.x*mid_v.point.w); 
 
             if constexpr (CULL_TYPE == ECullType::SGL_CULL_BACK)
                 result = (area < 0.0f);
