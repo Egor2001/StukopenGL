@@ -20,7 +20,7 @@
 #include "src/SVertexShader.h"
 #include "src/SFragmentShader.h"
 #include "src/SLight.h"
-#include "src/CPerspective.h"
+#include "src/SPerspective.h"
 #include "src/CPipeline.h"
 #include "src/CParallelPipeline.h"
 #include "src/CTexture.h"
@@ -61,9 +61,8 @@ int main(int argc, char* argv[])
 
         .camera = SCamera
         {
-            .pos = SVector{ 0.0f, 5.0f, 15.0f },
-//            .pos = SVector{ 0.0f, 0.0f, 0.0f },
-            .dir = SVector{ 0.0f, 1.0f, 3.0f },
+            .pos = SVector{ 0.0f, 0.0f, 10.0f },
+            .dir = SVector{ 0.0f, 0.0f, 1.0f },
             .up  = SVector{ 0.0f, 1.0f, 0.0f }
         },
 
@@ -72,11 +71,14 @@ int main(int argc, char* argv[])
             .point = SVector{ -2.5f, -1.0f, 0.0f },
             .color = SColor{ 1.0f, 1.0f, 1.0f },
             .phong_ads = SVector{ 0.125f, 0.250f, 0.625f },
-            //.phong_ads = SVector{ 0.0f, 1.0f, 0.0f },
             .phong_pow = 16.0f
         },
 
-        .projection = CPerspective(1.0f, 2.0f),
+        .projection = SPerspective
+        {
+            .near = 1.0f, 
+            .far = 2.0f
+        }
     };
 
     float side = fmin(scene.dim_x, scene.dim_y);
@@ -116,7 +118,8 @@ int main(int argc, char* argv[])
             texture_sky.get_color(frag.tex_u, 1.0f - frag.tex_v);
     };
 
-    auto pipeline = CPipeline<CFillRasterizer>(scene.dim_x, scene.dim_y); 
+    auto pipeline = 
+        CPipeline<CFillRasterizer>(scene.dim_x, scene.dim_y); 
 
     CScreen screen = CScreen();
 
@@ -125,32 +128,34 @@ int main(int argc, char* argv[])
 
     double sum_fps = 0.0f;
     size_t cnt = 0;
+    float theta = M_PI*0.05f;
     while (cnt < 1000)
     {
         beg_time = std::chrono::steady_clock::now();
         
         ++cnt;
-        float ang = float(cnt)*M_PI/180.0f;
-        SMatrixExt model_mtx = 
-            SMatrixExt(SVectorExt(cosf(ang), 0.0f, -sinf(ang), 0.0f),
-                       SVectorExt(0.0f,      1.0f,       0.0f, 0.0f),
-                       SVectorExt(sinf(ang), 0.0f,  cosf(ang), 0.0f));
-
+        float phi = float(cnt)*M_PI/180.0f;
+        scene.camera.dir = SVector{ std::cos(theta)*std::cos(phi), 
+                                    std::sin(theta),
+                                    std::cos(theta)*std::sin(phi) };
+        scene.camera.pos = SVector{ 0.0f, 0.0f, 1.0f } + 
+                           scene.camera.dir*10.0f;
+        scene.camera.up  = SVector{ 0.0f, 1.0f, 0.0f };
+        
         SMatrixExt camera_mtx = scene.camera.get_matrix();
         SMatrixExt viewport_mtx = view_mtx*scene.projection.get_matrix();
 
-        SMatrixExt plane_mtx = camera_mtx*model_mtx; 
         auto vert_shader_plane = 
-            [&scene, &plane_mtx, &viewport_mtx]
+            [&scene, &camera_mtx, &viewport_mtx]
         (SVertex& vertex)
         {
-            vertex.point  = plane_mtx*vertex.point; 
-            vertex.normal = ::normal(plane_mtx*vertex.normal); 
+            vertex.point  = camera_mtx*vertex.point; 
+            vertex.normal = ::normal(camera_mtx*vertex.normal); 
             vertex.color  = scene.light.apply(vertex, SVector{});
             vertex.point  = viewport_mtx*vertex.point; 
         };
 
-        float scale_sky = 100.0f;
+        float scale_sky = 20.0f;
         auto vert_shader_sky = 
             [&scene, &scale_sky, &camera_mtx, &viewport_mtx]
         (SVertex& vertex)
@@ -161,11 +166,13 @@ int main(int argc, char* argv[])
             vertex.point  = viewport_mtx*vertex.point; 
         };
 
-        pipeline.render_scene(object_sky, 
+        pipeline.render_scene(object_sky.vertex_buf(),
+                              object_sky.index_buf(), 
                               vert_shader_sky, frag_shader_sky, 
                               cull_face_sky);
 
-        pipeline.render_scene(object_plane, 
+        pipeline.render_scene(object_plane.vertex_buf(),
+                              object_plane.index_buf(), 
                               vert_shader_plane, frag_shader_plane, 
                               cull_face_plane);
 

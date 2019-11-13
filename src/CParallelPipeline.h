@@ -7,7 +7,7 @@
 #include "SLight.h"
 #include "SVertexShader.h"
 #include "SFragmentShader.h"
-#include "CPerspective.h"
+#include "SPerspective.h"
 #include "CFillRasterizer.h"
 #include "CBuffer.h"
 #include "CScreen.h"
@@ -33,7 +33,8 @@ public:
     ~CParallelPipeline();
 
     template<typename VS, typename FS, typename CF>
-    void render_scene(const CObject&, 
+    void render_scene(const std::vector<SVertex>&,
+                      const std::vector<SIndex>&, 
                       const VS& vert_shader, const FS& frag_shader,
                       const CF& cull_face);
 
@@ -72,11 +73,12 @@ template<template<typename> typename R>
 template<typename VS, typename FS, typename CF>
 void 
 CParallelPipeline<R>::
-render_scene(const CObject& object, 
+render_scene(const std::vector<SVertex>& vertex_buf,
+             const std::vector<SIndex>& index_buf, 
              const VS& vert_shader, const FS& frag_shader,
              const CF& cull_face)
 {
-    for (const auto& vertex: object.vertex_buf())
+    for (const auto& vertex: vertex_buf)
         vert_buf_.push_back(vertex);
 
     for (auto& vert : vert_buf_)
@@ -84,22 +86,28 @@ render_scene(const CObject& object,
 
     CLatch latch(THREAD_CNT+1);
     auto render_task = [this, &vert_shader, &frag_shader, &cull_face, 
-                        &object, &latch](size_t thread_idx)
+                        &index_buf, &latch](size_t thread_idx)
     {
-        size_t index_buf_size = object.index_buf().size();
+        size_t index_buf_size = index_buf.size();
 
-        auto cur_beg = object.index_buf().cbegin() + 
+        auto cur_beg = index_buf.cbegin() + 
             ((thread_idx + 0)*index_buf_size)/THREAD_CNT;
-        auto cur_end = object.index_buf().cbegin() + 
+        auto cur_end = index_buf.cbegin() + 
             ((thread_idx + 1)*index_buf_size)/THREAD_CNT;
 
         for (auto it = cur_beg; it != cur_end; ++it)
         {
+            if (cull_face(vert_buf_[it->arr[0]],
+                          vert_buf_[it->arr[1]],
+                          vert_buf_[it->arr[2]]))
+            {
+                continue;
+            }
+
             rasterizer_.rasterize(vert_buf_[it->arr[0]],
                                   vert_buf_[it->arr[1]],
                                   vert_buf_[it->arr[2]], 
-                                  frag_buf_vec_[thread_idx],
-                                  cull_face);
+                                  frag_buf_vec_[thread_idx]);
         }
 
         for (auto& frag : frag_buf_vec_[thread_idx])

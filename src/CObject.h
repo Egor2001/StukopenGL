@@ -13,6 +13,7 @@
 #include "math/SVector.h"
 #include "math/SColor.h" 
 #include "SVertex.h"
+#include "SIndex.h"
 #include "SFragment.h"
 
 //namespace sgl { 
@@ -20,11 +21,6 @@
 class CObject
 {
 public:
-    struct SObjIndex
-    {
-        size_t arr[3];
-    };
-
     CObject();
     explicit CObject(std::vector<SVertex>&& move_vertex_buf);
 
@@ -41,7 +37,7 @@ public:
         return vertex_buf_;
     }
 
-    const std::vector<SObjIndex>& index_buf() const noexcept
+    const std::vector<SIndex>& index_buf() const noexcept
     {
         return index_buf_;
     }
@@ -51,7 +47,7 @@ public:
 
 private:
     std::vector<SVertex>   vertex_buf_;
-    std::vector<SObjIndex> index_buf_;
+    std::vector<SIndex> index_buf_;
 };
 
 CObject::CObject():
@@ -64,7 +60,7 @@ CObject::CObject(std::vector<SVertex>&& move_vertex_buf):
     index_buf_()
 {
     for (size_t i = 0; i+2 < vertex_buf_.size(); i += 3)
-        index_buf_.push_back(SObjIndex{i+0, i+1, i+2}); 
+        index_buf_.push_back(SIndex{i+0, i+1, i+2}); 
 }
 
 CObject::CObject(CObject&& move_object):
@@ -126,9 +122,7 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
                     ++it;
                     if (isspace(*it))
                     {
-                        SVectorExt cur_vector;
-                        cur_vector.w = 1.0f;
-
+                        SVectorExt cur_vector = { 0.0f, 0.0f, 0.0f, 1.0f };
                         sscanf(it, "%f %f %f %f", 
                                &cur_vector.x, &cur_vector.y, &cur_vector.z,
                                &cur_vector.w); //w could be ignored
@@ -138,7 +132,6 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
                     else if (*it == 'n' && isspace(*(++it)))
                     {
                         SVector cur_normal;
-
                         sscanf(it, "%f %f %f", 
                                &cur_normal.x, &cur_normal.y, &cur_normal.z);
 
@@ -148,7 +141,6 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
                     {
                         float cur_tex_u = 0.0f;
                         float cur_tex_v = 0.0f;
-
                         sscanf(it, "%f %f", &cur_tex_u, &cur_tex_v);
 
                         tex_u_temp_buf.push_back(cur_tex_u);
@@ -162,65 +154,48 @@ bool CObject::parse_from(FILE* obj_file, const SColor& color_set)
                     ++it;
                     if (isspace(*it))
                     {
-                        auto vector_idx_vec = std::vector<size_t>(); 
-                        auto normal_idx_vec = std::vector<size_t>();
-                        auto tex_idx_vec    = std::vector<size_t>();
+                        auto cur_index_vec = std::vector<size_t>();
 
                         size_t cur_i = 0;
                         int is_scanned = 3;
                         for (cur_i = 0; *it && (is_scanned == 3); ++cur_i)
                         {
-                            while (std::isspace(*it)) ++it;
-                            if (!(*it)) 
-                                break;
+                            size_t bytes_read = 0;
 
                             size_t cur_vector_idx = 0;
                             size_t cur_normal_idx = 0;
                             size_t cur_tex_idx = 0;
-                            is_scanned = sscanf(it, "%zu/%zu/%zu",
+                            is_scanned = sscanf(it, "%zu/%zu/%zu%zn",
                                                 &cur_vector_idx,
                                                 &cur_tex_idx,
-                                                &cur_normal_idx);
+                                                &cur_normal_idx,
+                                                &bytes_read);
+
+                            it += bytes_read;
 
                             if (is_scanned == 3)
                             {
-                                vector_idx_vec.push_back(cur_vector_idx);
-                                normal_idx_vec.push_back(cur_normal_idx);
-                                tex_idx_vec   .push_back(cur_tex_idx);
+                                cur_index_vec.push_back(vertex_buf_.size());
+
+                                SVertex cur_vertex = 
+                                {
+                                    .point  = vector_temp_buf[cur_vector_idx-1],
+                                    .normal = normal_temp_buf[cur_normal_idx-1],
+                                    .color  = color_set,
+                                    .tex_u  = tex_u_temp_buf[cur_tex_idx-1],
+                                    .tex_v  = tex_v_temp_buf[cur_tex_idx-1]
+                                };
+
+                                vertex_buf_.push_back(cur_vertex);
                             }
-                            else
-                                break;
-
-                            while (!std::isspace(*it)) ++it;
                         }
 
-                        size_t cnt_scanned = cur_i;
-
-                        auto cur_index_vec = std::vector<size_t>();
-                        for (cur_i = 0; cur_i < cnt_scanned; ++cur_i)
+                        SIndex cur_index = {};
+                        for (size_t i = 0; (i+2) < cur_index_vec.size(); ++i)
                         {
-                            SVertex cur_vertex = SVertex();
-
-                            size_t cur_vector_idx = vector_idx_vec[cur_i]-1; 
-                            size_t cur_normal_idx = normal_idx_vec[cur_i]-1;
-                            size_t cur_tex_idx    = tex_idx_vec   [cur_i]-1;
-
-                            cur_vertex.point  = vector_temp_buf[cur_vector_idx];
-                            cur_vertex.normal = normal_temp_buf[cur_normal_idx];
-                            cur_vertex.tex_u  = tex_u_temp_buf [cur_tex_idx];
-                            cur_vertex.tex_v  = tex_v_temp_buf [cur_tex_idx];
-                            cur_vertex.color  = color_set;
-
-                            cur_index_vec.push_back(vertex_buf_.size());
-                            vertex_buf_.push_back(cur_vertex);
-                        }
-
-                        SObjIndex cur_index = SObjIndex();
-                        cur_index.arr[0] = cur_index_vec[0];
-                        for (size_t i = 1; i+1 < cur_index_vec.size(); ++i)
-                        {
-                            cur_index.arr[1] = cur_index_vec[i+0];
-                            cur_index.arr[2] = cur_index_vec[i+1];
+                            cur_index.arr[0] = cur_index_vec[0];
+                            cur_index.arr[1] = cur_index_vec[i+1];
+                            cur_index.arr[2] = cur_index_vec[i+2];
 
                             index_buf_.push_back(cur_index);
                         }

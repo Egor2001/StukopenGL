@@ -7,11 +7,12 @@
 #include "SLight.h"
 #include "SVertexShader.h"
 #include "SFragmentShader.h"
-#include "CPerspective.h"
+#include "SPerspective.h"
 #include "CFillRasterizer.h"
 #include "CBuffer.h"
 #include "CScreen.h"
 #include "SScene.h"
+#include "SIndex.h"
 
 //namespace sgl {
 
@@ -29,7 +30,9 @@ public:
     ~CPipeline();
 
     template<typename VS, typename FS, typename CF>
-    void render_scene(const CObject&, const VS&, const FS&, const CF&);
+    void render_scene(const std::vector<SVertex>&, 
+                      const std::vector<SIndex>&, 
+                      const VS&, const FS&, const CF&);
     void flush_screen(CScreen&);
     void clear_buffer();
 
@@ -64,17 +67,18 @@ template<template<typename> typename R>
 template<typename VS, typename FS, typename CF>
 void 
 CPipeline<R>::
-render_scene(const CObject& object, 
+render_scene(const std::vector<SVertex>& vertex_buf, 
+             const std::vector<SIndex>& index_buf, 
              const VS& vert_shader, const FS& frag_shader,
              const CF& cull_face)
 {
-    for (const auto& vertex: object.vertex_buf())
+    for (const auto& vertex: vertex_buf)
         vert_buf_.push_back(vertex);
 
     for (auto& vert : vert_buf_)
         vert_shader(vert);
 
-    for (auto& index : object.index_buf())
+    for (auto& index : index_buf)
     {
         if (cull_face(vert_buf_[index.arr[0]],
                       vert_buf_[index.arr[1]],

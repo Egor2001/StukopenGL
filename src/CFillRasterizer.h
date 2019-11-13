@@ -83,12 +83,7 @@ fill_face(const SVertex& beg_v,
     if (mid_f.point.y < end_f.point.y) std::swap(mid_f, end_f);
     if (beg_f.point.y < mid_f.point.y) std::swap(beg_f, mid_f);
 
-    if (fabs(beg_f.point.y - end_f.point.y) < 1.0f)
-    {
-        fill_xseq(beg_f, mid_f, frag_buf);
-        fill_xseq(end_f, mid_f, frag_buf);
-    }
-    else
+    if (beg_f.point.y - end_f.point.y > 1.0f)
     {
         float ratio = (beg_f.point.y - mid_f.point.y) / 
                       (beg_f.point.y - end_f.point.y);
@@ -113,22 +108,18 @@ fill_half(const SFragment& beg_f,
     SFragment beg_clamped = beg_f;
     SFragment end_clamped = end_f;
 
-    ::clamp_y(beg_clamped, top_beg, 0.0f, max_y_);
-    ::clamp_y(end_clamped, top_end, 0.0f, max_y_);
+    ::clamp_y(beg_clamped, top_beg, 0.0f, 1.5f*max_y_);
+    ::clamp_y(end_clamped, top_end, 0.0f, 1.5f*max_y_);
 
     float length = fmax(fabs(top_beg.point.y - beg_clamped.point.y),
                         fabs(top_end.point.y - end_clamped.point.y));
     size_t step_cnt = size_t(ceilf(length));
-    
-    if (length < 0.5f)
-    {
-        fill_xseq(beg_clamped, end_clamped, frag_buf);
-    }
-    else
+
+    if (step_cnt)
     {
         for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
         {
-            float ratio = float(cur_step)/length;
+            float ratio = float(cur_step)/step_cnt;
             fill_xseq(::interpolate(top_beg, beg_clamped, ratio), 
                       ::interpolate(top_end, end_clamped, ratio),
                       frag_buf);
@@ -145,20 +136,16 @@ fill_xseq(const SFragment& beg_f,
 {
     SFragment beg_clamped = beg_f; 
     SFragment end_clamped = end_f; 
-    ::clamp_x(beg_clamped, end_clamped, 0.0f, max_x_);
+    ::clamp_x(beg_clamped, end_clamped, 0.0, 1.5f*max_x_);
 
     float length = fabs(beg_clamped.point.x - end_clamped.point.x);
     size_t step_cnt = size_t(ceilf(length));
 
-    if (length < 0.5f)
-    {
-        frag_buf.push_back(::interpolate(beg_clamped, end_clamped, 0.5f));
-    }
-    else
+    if (step_cnt)
     {
         for (size_t cur_step = 0; cur_step <= step_cnt; ++cur_step)
         {
-            float ratio = float(cur_step)/length;
+            float ratio = float(cur_step)/step_cnt;
             frag_buf.push_back(::interpolate(beg_clamped, end_clamped, ratio));
         }
     }

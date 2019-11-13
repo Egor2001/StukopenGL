@@ -87,7 +87,8 @@ public:
         size_t idx = DIM_W*y + x; 
 
         if (x < DIM_W && y < DIM_H &&
-            fragment.point.z < depth_buf_[idx])
+            fragment.point.z < depth_buf_[idx] &&
+            fragment.point.z > 1.0f)
         {
             color_buf_[idx].r = uint8_t(255.0f*fragment.color.r);
             color_buf_[idx].g = uint8_t(255.0f*fragment.color.g);
@@ -99,7 +100,7 @@ public:
     }
 
     void clear(const SBufColor& color_val = SBufColor(), 
-               const float depth_val = FLT_MAX)
+               const float depth_val = 1.0f)
     {
         wchar_t color_wchar = 0;
         wchar_t depth_wchar = 0;
@@ -122,7 +123,7 @@ CBuffer::CBuffer():
     if (depth_buf_)
     {
         for (size_t i = 0; i < DIM_W*DIM_H; ++i)
-            depth_buf_[i] = FLT_MAX;
+            depth_buf_[i] = 1.0f;
     }
 } 
 

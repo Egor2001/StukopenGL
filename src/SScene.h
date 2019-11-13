@@ -3,7 +3,7 @@
 
 #include "SCamera.h"
 #include "SLight.h"
-#include "CPerspective.h"
+#include "SPerspective.h"
 
 //namespace sgl {
 
@@ -14,7 +14,7 @@ public:
     float        dim_x, dim_y;
     SCamera      camera;
     SLight       light;
-    CPerspective projection;
+    SPerspective projection;
 };
 
 //} //namespace sgl
